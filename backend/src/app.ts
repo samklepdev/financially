@@ -1,14 +1,19 @@
 import express, {type Request, type Response } from 'express';
-import { db } from './config/db.ts';
+import {transactionsRouter} from './routes/transactions.router.ts'
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(express.json());
+
+// Routes
+app.use('/api/v1/transactions', transactionsRouter)
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Hello, World!');
 });
 
-app.listen(3000, () => {
-    console.log('Server is running on port 3000');
+// Listen on port 3000
+app.listen(PORT, () => {
+    console.log(`Server is running on port ${PORT}`);
 });
