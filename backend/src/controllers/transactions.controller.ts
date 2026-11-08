@@ -1,7 +1,8 @@
 import type { Request, Response } from 'express';
-import type {NewTransaction, Transaction} from "../types/transaction.ts";
 import {validateTransaction} from "../helpers/transactionValidation.ts";
-import {db} from "../config/db.ts";
+import {TransactionService} from "../services/transactions.service.ts";
+
+const transactionService = new TransactionService();
 
 /**
  * Retrieves all transactions from the database, ordered by date and identifier in descending order,
@@ -13,7 +14,7 @@ import {db} from "../config/db.ts";
  */
 export function getAllTransactions(_req: Request, res: Response) {
     // Get all transactions from the database
-    const transactions = db.prepare('SELECT * FROM transactions ORDER BY date DESC, id DESC').all() as Transaction[];
+    const transactions = transactionService.getAllTransactions()
     // Return the transactions as a JSON response
     return res.status(200).json({data: transactions});
 }
@@ -32,9 +33,8 @@ export function getTransactionById(req: Request<{id: string}>, res: Response) {
         return res.status(400).json({ error: 'id must be a whole number' });
     }
 
-    const transaction = db
-        .prepare('SELECT * FROM transactions WHERE id = ?')
-        .get(id) as Transaction | undefined;
+    // Get a single transaction
+    const transaction = transactionService.getTransactionById(id)
 
     if (!transaction) {
         res.status(400).json({error: 'Transaction not found'})
@@ -64,10 +64,7 @@ export function createTransaction(req: Request, res: Response) {
     const t = result.value;
 
     try {
-        const created = db
-            .prepare(`INSERT INTO transactions (date, description, amount_cents, category_id, bill_id)
-                VALUES (?, ?, ?, ?, ?) RETURNING *`)
-            .get(t.date, t.description, t.amount_cents, t.category_id, t.bill_id) as Transaction;
+        const created = transactionService.createTransaction(t)
         // Return the created transaction as a JSON response
         return res.status(201).json({ data: created});
     } catch (err) {
@@ -87,7 +84,7 @@ export function createTransaction(req: Request, res: Response) {
  */
 export function updateTransaction(req: Request<{id: string}>, res: Response) {
     // Get the Id from the request body
-    const id = req.params.id;
+    const id = Number(req.params.id);
 
     // Validate the Id
     if (!Number.isInteger(id)) {
@@ -104,12 +101,7 @@ export function updateTransaction(req: Request<{id: string}>, res: Response) {
 
     try {
         // Update the transaction
-        const updated = db
-            .prepare('UPDATE transactions' +
-                'SET date = ?, description = ?, amount_cents = ?, category_id = ?, bill_id = ?' +
-                'WHERE id = ?' +
-                'RETURNING *')
-            .get(t.date, t.description, t.amount_cents, t.category_id, t.bill_id) as Transaction | undefined;
+        const updated = transactionService.updateTransaction(id, t)
 
         // Return error if transaction not found
         if (!updated) {
@@ -134,15 +126,15 @@ export function updateTransaction(req: Request<{id: string}>, res: Response) {
  * @return A response with status 204 when deleted, 400 when the id is invalid, or 404 when no transaction is found.
  */
 export function deleteTransaction(req: Request<{id: string}>, res: Response) {
-    const id = req.params.id;
+    const id = Number(req.params.id);
     if (!Number.isInteger(id)) {
         return res.status(400).json({error: 'Id must be a whole number'})
     }
 
-    const { changes } = db.prepare('DELETE FROM transactions WHERE id = ?').run(id);
+    const { changes } = transactionService.deleteTransaction(id)
 
     if (changes === 0) {
-        return res.status(404).json({error: 'Transaction not fround'})
+        return res.status(404).json({error: 'Transaction not found'})
     }
 
     return res.status(204).end();
