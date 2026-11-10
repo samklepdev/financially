@@ -1,4 +1,5 @@
-import {NavLink, Outlet} from "react-router-dom";
+import {NavLink, Outlet, useNavigate} from "react-router-dom";
+import {useAuth} from "./auth/AuthContext.tsx";
 import './Layout.css'
 
 function navClass({isActive}: {isActive: boolean}) {
@@ -6,6 +7,14 @@ function navClass({isActive}: {isActive: boolean}) {
 }
 
 function Layout() {
+    const {logout} = useAuth();
+    const navigate = useNavigate();
+
+    async function handleLogout() {
+        await logout();
+        navigate('/login');
+    }
+
     return (
         <div className="ledger-shell">
             <header className="ledger-tape">
@@ -14,6 +23,9 @@ function Layout() {
                     <NavLink to="/" end className={navClass}>Dashboard</NavLink>
                     <NavLink to="/transactions" className={navClass}>Transactions</NavLink>
                 </nav>
+                <button type="button" className="logout-button" onClick={handleLogout}>
+                    Log out
+                </button>
             </header>
             <main>
                 <Outlet/>
