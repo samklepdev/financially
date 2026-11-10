@@ -17,7 +17,7 @@ function Login() {
 
         try {
             await login(password);
-            navigate('/');
+            navigate('/dashboard');
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Something went wrong');
         } finally {

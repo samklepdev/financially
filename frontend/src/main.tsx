@@ -23,10 +23,10 @@ createRoot(document.getElementById('root')!).render(
     <BrowserRouter>
       <AuthProvider>
         <Routes>
-          <Route path="/login" element={<Login/>}/>
+          <Route path="/" element={<Login/>}/>
           <Route element={<RequireAuth/>}>
             <Route element={<Layout/>}>
-              <Route path="/" element={<App/>}/>
+              <Route path="/dashboard" element={<App/>}/>
               <Route path="/transactions" element={<Transactions/>}/>
             </Route>
           </Route>

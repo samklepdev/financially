@@ -16,9 +16,9 @@ export abstract class BaseApiService implements IBaseApiService {
                 if (
                     axios.isAxiosError(error) &&
                     error.response?.status === 401 &&
-                    window.location.pathname !== '/login'
+                    window.location.pathname !== '/'
                 ) {
-                    window.location.assign('/login');
+                    window.location.assign('/');
                 }
                 return Promise.reject(error);
             }
