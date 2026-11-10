@@ -2,11 +2,27 @@ import axios, {type AxiosInstance, type AxiosRequestConfig} from "axios";
 import type {ApiErrorBody, ApiResponse, IBaseApiService} from "../types/api.ts";
 
 export abstract class BaseApiService implements IBaseApiService {
-    protected readonly http: AxiosInstance = axios.create({ baseURL: import.meta.env.VITE_BASE_API_URL })
+    protected readonly http: AxiosInstance = axios.create({
+        baseURL: import.meta.env.VITE_BASE_API_URL,
+        withCredentials: true,
+    })
     protected readonly path: string;
 
     constructor(path: string) {
         this.path = path;
+        this.http.interceptors.response.use(
+            (response) => response,
+            (error) => {
+                if (
+                    axios.isAxiosError(error) &&
+                    error.response?.status === 401 &&
+                    window.location.pathname !== '/login'
+                ) {
+                    window.location.assign('/login');
+                }
+                return Promise.reject(error);
+            }
+        )
     }
 
     /**

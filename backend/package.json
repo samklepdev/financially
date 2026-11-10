@@ -5,7 +5,9 @@
   "main": "index.js",
   "type": "module",
   "scripts": {
-    "dev": "node --watch src/app.ts"
+    "dev": "node --watch --env-file-if-exists=.env.local src/app.ts",
+    "test": "node --test",
+    "hash-password": "node src/scripts/hashPassword.ts"
   },
   "keywords": [],
   "author": "",

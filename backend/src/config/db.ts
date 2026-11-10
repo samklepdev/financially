@@ -1,6 +1,8 @@
 import {DatabaseSync} from 'node:sqlite'
 
-export const db = new DatabaseSync('financially.db');
+const DB_PATH = process.env.DATABASE_FILE ?? 'financially.db';
+
+export const db = new DatabaseSync(DB_PATH);
 
 db.exec(`
     PRAGMA foreign_keys = ON;
@@ -26,6 +28,12 @@ db.exec(`
         bill_id INTEGER,
         FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE SET NULL,
         FOREIGN KEY (bill_id) REFERENCES bills(id) ON DELETE SET NULL
+    ) STRICT;
+
+    CREATE TABLE IF NOT EXISTS sessions (
+        id TEXT PRIMARY KEY,
+        expires_at TEXT NOT NULL,
+        created_at TEXT NOT NULL
     ) STRICT;
 `)
 

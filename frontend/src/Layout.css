@@ -54,6 +54,31 @@
   border-bottom-color: var(--due);
 }
 
+.logout-button {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-on-ink);
+  background: none;
+  padding: 0.3rem 0.65rem;
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 999px;
+  white-space: nowrap;
+  cursor: pointer;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.logout-button:hover {
+  color: var(--text-on-ink-strong);
+  border-color: var(--text-on-ink);
+}
+
+.logout-button:focus-visible {
+  outline: 2px solid var(--due);
+  outline-offset: 2px;
+}
+
 @media (max-width: 640px) {
   .ledger-tape {
     flex-wrap: wrap;
