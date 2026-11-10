@@ -1,0 +1,68 @@
+.ledger-shell {
+  max-width: 880px;
+  margin: 0 auto;
+  padding: 2.5rem 1.5rem 4rem;
+}
+
+.ledger-tape {
+  display: flex;
+  align-items: center;
+  gap: 1.5rem;
+  padding-bottom: 1.25rem;
+  margin-bottom: 1.75rem;
+  border-bottom: 1px solid var(--rule-on-ink);
+}
+
+.wordmark {
+  font-family: var(--display);
+  font-style: italic;
+  font-weight: 500;
+  font-size: 1.5rem;
+  color: var(--text-on-ink-strong);
+  text-decoration: none;
+}
+
+.tape-nav {
+  display: flex;
+  align-items: center;
+  gap: 1.25rem;
+  margin-left: auto;
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  letter-spacing: 0.04em;
+}
+
+.tape-nav__link {
+  color: var(--text-on-ink);
+  text-decoration: none;
+  padding-bottom: 0.2rem;
+  border-bottom: 1px solid transparent;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.tape-nav__link:hover {
+  color: var(--text-on-ink-strong);
+}
+
+.tape-nav__link:focus-visible {
+  outline: 2px solid var(--due);
+  outline-offset: 3px;
+}
+
+.tape-nav__link.active {
+  color: var(--text-on-ink-strong);
+  border-bottom-color: var(--due);
+}
+
+@media (max-width: 640px) {
+  .ledger-tape {
+    flex-wrap: wrap;
+    row-gap: 0.75rem;
+  }
+
+  .tape-nav {
+    margin-left: 0;
+    order: 3;
+    width: 100%;
+  }
+}

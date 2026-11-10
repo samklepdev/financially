@@ -1,0 +1,83 @@
+.ledger-filters {
+  display: flex;
+  align-items: flex-end;
+  flex-wrap: wrap;
+  gap: 1.5rem;
+  margin-bottom: 2rem;
+}
+
+.ledger-filter {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-on-ink);
+}
+
+.ledger-filter select {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-on-ink-strong);
+  background: var(--ink-raised);
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 4px;
+  padding: 0.45rem 0.6rem;
+  min-width: 10rem;
+}
+
+.ledger-filter select:focus-visible {
+  outline: 2px solid var(--due);
+  outline-offset: 2px;
+}
+
+.ledger-count {
+  font-family: var(--mono);
+  font-size: 0.8rem;
+  color: var(--text-on-ink);
+  margin-left: auto;
+  padding-bottom: 0.5rem;
+}
+
+.ledger-group {
+  margin-bottom: 2rem;
+}
+
+.ledger-group__label {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-on-ink);
+  padding-bottom: 0.5rem;
+  margin-bottom: 0.75rem;
+  border-bottom: 1px solid var(--rule-on-ink);
+}
+
+.ledger-group .ledger-row {
+  padding-left: 0.85rem;
+}
+
+.ledger-index {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  color: var(--text-on-paper-dim);
+  width: 2ch;
+  flex-shrink: 0;
+  text-align: right;
+}
+
+@media (max-width: 640px) {
+  .ledger-count {
+    margin-left: 0;
+    width: 100%;
+  }
+
+  .ledger-index {
+    display: none;
+  }
+}
