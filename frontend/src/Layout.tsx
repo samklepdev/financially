@@ -12,15 +12,15 @@ function Layout() {
 
     async function handleLogout() {
         await logout();
-        navigate('/login');
+        navigate('/');
     }
 
     return (
         <div className="ledger-shell">
             <header className="ledger-tape">
-                <NavLink to="/" className="wordmark">Financially</NavLink>
+                <NavLink to="/dashboard" className="wordmark">Financially</NavLink>
                 <nav className="tape-nav" aria-label="Primary">
-                    <NavLink to="/" end className={navClass}>Dashboard</NavLink>
+                    <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>
                     <NavLink to="/transactions" className={navClass}>Transactions</NavLink>
                 </nav>
                 <button type="button" className="logout-button" onClick={handleLogout}>
