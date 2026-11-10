@@ -67,7 +67,7 @@ function Import() {
             <div className="import-picker">
                 <label className="import-file-label">
                     <input type="file" accept="application/pdf" onChange={handleFileChange} disabled={loading}/>
-                    Choose a Cash App statement PDF
+                    Choose a statement PDF
                 </label>
             </div>
 
