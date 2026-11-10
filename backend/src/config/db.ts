@@ -37,3 +37,11 @@ db.exec(`
     ) STRICT;
 `)
 
+// SQLite has no `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, so guard it by
+// checking the column list first — this runs every process start, but only
+// ever ALTERs once per database file.
+const categoryColumns = db.prepare("SELECT name FROM pragma_table_info('categories')").all() as {name: string}[];
+if (!categoryColumns.some((c) => c.name === 'color')) {
+    db.exec(`ALTER TABLE categories ADD COLUMN color TEXT NOT NULL DEFAULT '#6b9478'`);
+}
+
