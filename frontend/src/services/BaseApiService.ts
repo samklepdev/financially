@@ -2,68 +2,69 @@ import axios, {type AxiosInstance, type AxiosRequestConfig} from "axios";
 import type {ApiErrorBody, ApiResponse, IBaseApiService} from "../types/api.ts";
 
 export abstract class BaseApiService implements IBaseApiService {
-    protected readonly http: AxiosInstance = axios.create({ baseURL: '/api/v1' })
+    protected readonly http: AxiosInstance = axios.create({ baseURL: import.meta.env.VITE_BASE_API_URL })
+    protected readonly path: string;
+
+    constructor(path: string) {
+        this.path = path;
+    }
 
     /**
      * Retrieves all resources from the specified URL using the provided Axios request configuration.
      *
      * @template T
-     * @param url The endpoint URL to request.
      * @param options The Axios request configuration to apply to the request.
      * @return A promise that resolves with the response data typed as T.
      */
-    async getAll<T>(url: string, options?: AxiosRequestConfig): Promise<T> {
-        return this.#request<T>({...options, url});
+    getAll<T>(options?: AxiosRequestConfig): Promise<T> {
+        return this.#request<T>({...options, url: this.path});
     };
 
     /**
      * Retrieves a resource by its unique identifier.
      *
      * @template T
-     * @param url The base URL of the resource endpoint.
      * @param id The unique identifier of the resource to retrieve.
      * @param options The Axios request configuration to apply to the request.
      * @return A promise that resolves to the retrieved resource data.
      */
-    async getById<T>(url: string, id: string | number, options?: AxiosRequestConfig): Promise<T> {
-        return this.#request<T>({...options, url: `${url}/${id}`})
+    getById<T>(id: string | number, options?: AxiosRequestConfig): Promise<T> {
+        return this.#request<T>({...options, url: `${this.path}/${id}`})
     };
 
     /**
      * Sends a request to create a resource using the specified URL, request body, and Axios configuration.
      *
-     * @param url The endpoint URL for the create request.
      * @param body The payload to include in the request.
      * @param options The Axios request configuration to apply to the request.
      * @return A promise that resolves with the created resource response data.
      */
-    async create<T>(url: string, body: unknown, options?: AxiosRequestConfig): Promise<T> {
-        return this.#request<T>({...options, method: 'POST', url, data: body});
+    async create<T>(body: unknown, options?: AxiosRequestConfig): Promise<T> {
+        return this.#request<T>({...options, method: 'POST', url: this.path, data: body});
     }
 
     /**
      * Sends an update request to the specified URL with the provided request body and configuration.
      *
-     * @param url - The base URL of the resource endpoint.
      * @param id - The unique identifier of the resource to update.
      * @param body - The payload to send as the request data.
      * @param options - Axios request configuration options to apply to the request.
      * @return A promise that resolves with the response data typed as T.
      */
-    async update<T>(url: string, id: string | number, body: unknown, options?: AxiosRequestConfig): Promise<T> {
-        return this.#request<T>({...options, method: 'PUT', url: `${url}/${id}`, data: body})
+    async update<T>(id: string | number, body: unknown, options?: AxiosRequestConfig): Promise<T> {
+        return this.#request<T>({...options, method: 'PUT', url: `${this.path}/${id}`, data: body})
     }
 
     /**
      * Sends a delete request to the specified URL using the provided Axios request configuration.
      *
-     * @param url The target URL for the delete request.
+     * @param id
      * @param options The Axios request configuration to apply to the request.
      * @return A promise that resolves when the request completes.
      */
-    async delete(url: string, options?: AxiosRequestConfig): Promise<void> {
+    async delete(id: string | number, options?: AxiosRequestConfig): Promise<void> {
         // #send, not #request: a 204 has no body to check
-        await this.#send<void>({...options, method: 'DELETE', url})
+        await this.#send<void>({...options, method: 'DELETE', url: `${this.path}/${id}`})
     }
 
     /**
