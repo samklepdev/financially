@@ -1,0 +1,53 @@
+.import-picker {
+  margin-bottom: 1.5rem;
+}
+
+.import-file-label {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.75rem;
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--text-on-ink-strong);
+  cursor: pointer;
+}
+
+.import-row input[type="checkbox"] {
+  width: 1.1rem;
+  height: 1.1rem;
+  accent-color: var(--due);
+  flex-shrink: 0;
+}
+
+.import-duplicate {
+  color: var(--due);
+  border-color: var(--due);
+}
+
+.import-confirm {
+  margin-top: 1.5rem;
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.95rem;
+  background: var(--credit-dim);
+  color: var(--text-on-ink-strong);
+  border: none;
+  border-radius: 4px;
+  padding: 0.7rem 1.3rem;
+  cursor: pointer;
+  transition: opacity 0.15s ease;
+}
+
+.import-confirm:hover {
+  opacity: 0.85;
+}
+
+.import-confirm:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.import-confirm:focus-visible {
+  outline: 2px solid var(--due);
+  outline-offset: 2px;
+}

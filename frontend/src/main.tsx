@@ -17,6 +17,7 @@ import Login from './auth/Login.tsx'
 import Layout from './Layout.tsx'
 import App from './App.tsx'
 import Transactions from './transactions/Transactions.tsx'
+import Import from './import/Import.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -28,6 +29,7 @@ createRoot(document.getElementById('root')!).render(
             <Route element={<Layout/>}>
               <Route path="/dashboard" element={<App/>}/>
               <Route path="/transactions" element={<Transactions/>}/>
+              <Route path="/import" element={<Import/>}/>
             </Route>
           </Route>
         </Routes>

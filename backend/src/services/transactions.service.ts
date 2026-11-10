@@ -61,4 +61,41 @@ export class TransactionService {
           const toDelete = db.prepare('DELETE FROM transactions WHERE id = ?').run(id);
           return toDelete;
     }
+
+    /**
+     * Checks whether a transaction with the same date, description, and
+     * amount already exists. Used to flag (not block) likely duplicates
+     * during import — two transactions can legitimately share all three.
+     */
+    existsSimilar(date: string, description: string, amount_cents: number): boolean {
+        const row = db.prepare(
+            'SELECT 1 FROM transactions WHERE date = ? AND description = ? AND amount_cents = ? LIMIT 1'
+        ).get(date, description, amount_cents);
+        return row !== undefined;
+    }
+
+    /**
+     * Inserts every transaction in one all-or-nothing database transaction.
+     *
+     * @throws Error (and rolls back every insert in this batch) if any row fails,
+     * e.g. a foreign key violation on category_id/bill_id.
+     */
+    createMany(transactions: NewTransaction[]): Transaction[] {
+        const insert = db.prepare(`INSERT INTO transactions (date, description, amount_cents, category_id, bill_id)
+            VALUES (?, ?, ?, ?, ?) RETURNING *`);
+        const created: Transaction[] = [];
+
+        db.exec('BEGIN');
+        try {
+            for (const t of transactions) {
+                created.push(insert.get(t.date, t.description, t.amount_cents, t.category_id, t.bill_id) as Transaction);
+            }
+            db.exec('COMMIT');
+        } catch (err) {
+            db.exec('ROLLBACK');
+            throw err;
+        }
+
+        return created;
+    }
 }
