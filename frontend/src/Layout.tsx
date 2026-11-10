@@ -22,6 +22,7 @@ function Layout() {
                 <nav className="tape-nav" aria-label="Primary">
                     <NavLink to="/dashboard" className={navClass}>Dashboard</NavLink>
                     <NavLink to="/transactions" className={navClass}>Transactions</NavLink>
+                    <NavLink to="/import" className={navClass}>Import</NavLink>
                 </nav>
                 <button type="button" className="logout-button" onClick={handleLogout}>
                     Log out
