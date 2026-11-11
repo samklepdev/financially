@@ -46,10 +46,16 @@ export async function previewImport(req: Request, res: Response) {
 
     const withSuggestions = withRuleSuggestions.map((t) => {
         if (t.category_id !== null) {
-            return {...t, aiSuggested: false};
+            return {...t, aiSuggested: false, proposedCategoryName: null};
         }
-        const suggested = aiSuggestions[t.description] ?? null;
-        return {...t, category_id: suggested, aiSuggested: suggested !== null};
+        const suggestion = aiSuggestions[t.description];
+        if (!suggestion || suggestion.kind === 'none') {
+            return {...t, aiSuggested: false, proposedCategoryName: null};
+        }
+        if (suggestion.kind === 'existing') {
+            return {...t, category_id: suggestion.categoryId, aiSuggested: true, proposedCategoryName: null};
+        }
+        return {...t, category_id: null, aiSuggested: true, proposedCategoryName: suggestion.name};
     });
 
     return res.status(200).json({data: {transactions: withSuggestions}});
