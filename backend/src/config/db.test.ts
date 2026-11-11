@@ -25,3 +25,18 @@ test('categories table has a color column with a default value', () => {
     assert.ok(row);
     assert.equal(row.color, '#6b9478');
 });
+
+test('category_rules table enforces a category_id foreign key and cascades on delete', () => {
+    db.prepare('INSERT INTO categories (name, color) VALUES (?, ?)').run('Rule Test Category', '#6b9478');
+    const category = db.prepare('SELECT * FROM categories WHERE name = ?').get('Rule Test Category') as {id: number};
+
+    db.prepare('INSERT INTO category_rules (pattern, category_id) VALUES (?, ?)').run('walmart', category.id);
+    const rule = db.prepare('SELECT * FROM category_rules WHERE pattern = ?').get('walmart') as
+        {id: number, category_id: number} | undefined;
+    assert.ok(rule);
+    assert.equal(rule.category_id, category.id);
+
+    db.prepare('DELETE FROM categories WHERE id = ?').run(category.id);
+    const afterDelete = db.prepare('SELECT * FROM category_rules WHERE pattern = ?').get('walmart');
+    assert.equal(afterDelete, undefined);
+});

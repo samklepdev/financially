@@ -1,7 +1,6 @@
 import axios, {type AxiosInstance} from "axios";
 import type {ApiErrorBody, ApiResponse} from "../types/api.ts";
-import type {ImportCandidate} from "../types/transaction.ts";
-import type {NewTransaction} from "../types/transaction.ts";
+import type {ImportCandidate, ImportConfirmItem} from "../types/transaction.ts";
 
 export class ImportApiService {
     private readonly http: AxiosInstance = axios.create({
@@ -35,7 +34,7 @@ export class ImportApiService {
      *
      * @return The number of transactions created.
      */
-    async confirmImport(transactions: NewTransaction[]): Promise<number> {
+    async confirmImport(transactions: ImportConfirmItem[]): Promise<number> {
         try {
             const res = await this.http.post<ApiResponse<{created: number}>>(
                 '/transactions/import', {transactions}

@@ -1,0 +1,55 @@
+.new-category-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.new-category-name {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: var(--credit-dim);
+  background: none;
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.new-category-name:hover,
+.new-category-name:focus-visible {
+  border-color: var(--text-on-paper);
+}
+
+.new-category-pick-existing {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  color: var(--text-on-paper-dim);
+  background: none;
+  border: none;
+  padding: 0;
+  cursor: pointer;
+  white-space: nowrap;
+}
+
+.new-category-pick-existing:hover,
+.new-category-pick-existing:focus-visible {
+  color: var(--text-on-paper);
+  text-decoration: underline;
+}
+
+.new-category-editor {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.new-category-input {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.1rem 0.4rem;
+  min-width: 10rem;
+}

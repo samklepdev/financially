@@ -2,9 +2,14 @@ import type {Request, Response} from 'express';
 import {parseCashAppStatementPdf} from '../services/cashAppStatementParser.ts';
 import {validateTransaction} from '../helpers/transactionValidation.ts';
 import {TransactionService} from '../services/transactions.service.ts';
+import {CategoryRuleService} from '../services/categoryRules.service.ts';
+import {suggestCategories} from '../services/ollamaCategorySuggester.service.ts';
+import {resolveNewCategories} from '../services/importCategoryResolver.service.ts';
+import type {ImportConfirmItem} from '../services/importCategoryResolver.service.ts';
 import type {NewTransaction} from '../types/transaction.ts';
 
 const transactionService = new TransactionService();
+const categoryRuleService = new CategoryRuleService();
 
 /**
  * Parses an uploaded PDF statement into candidate transactions, each flagged
@@ -29,11 +34,31 @@ export async function previewImport(req: Request, res: Response) {
         return res.status(400).json({error: message});
     }
 
-    const withSuggestions = transactions.map((t) => ({
+    const withRuleSuggestions = transactions.map((t) => ({
         ...t,
-        category_id: transactionService.findRecentCategoryForDescription(t.description),
+        category_id: transactionService.findRecentCategoryForDescription(t.description)
+            ?? categoryRuleService.findCategoryForDescription(t.description),
         isDuplicate: transactionService.existsSimilar(t.date, t.description, t.amount_cents),
     }));
+
+    const unmatchedDescriptions = withRuleSuggestions
+        .filter((t) => t.category_id === null)
+        .map((t) => t.description);
+    const aiSuggestions = await suggestCategories(unmatchedDescriptions);
+
+    const withSuggestions = withRuleSuggestions.map((t) => {
+        if (t.category_id !== null) {
+            return {...t, aiSuggested: false, proposedCategoryName: null};
+        }
+        const suggestion = aiSuggestions[t.description];
+        if (!suggestion || suggestion.kind === 'none') {
+            return {...t, aiSuggested: false, proposedCategoryName: null};
+        }
+        if (suggestion.kind === 'existing') {
+            return {...t, category_id: suggestion.categoryId, aiSuggested: true, proposedCategoryName: null};
+        }
+        return {...t, category_id: null, aiSuggested: true, proposedCategoryName: suggestion.name};
+    });
 
     return res.status(200).json({data: {transactions: withSuggestions}});
 }
@@ -57,6 +82,12 @@ export function confirmImport(req: Request, res: Response) {
         validated.push(result.value as NewTransaction);
     }
 
-    const created = transactionService.createMany(validated);
+    const withNewCategoryNames: ImportConfirmItem[] = validated.map((t, i) => ({
+        ...t,
+        newCategoryName: body[i]?.newCategoryName,
+    }));
+    const resolved = resolveNewCategories(withNewCategoryNames);
+
+    const created = transactionService.createMany(resolved);
     return res.status(201).json({data: {created: created.length}});
 }

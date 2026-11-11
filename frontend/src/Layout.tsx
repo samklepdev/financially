@@ -24,6 +24,7 @@ function Layout() {
                     <NavLink to="/transactions" className={navClass}>Transactions</NavLink>
                     <NavLink to="/import" className={navClass}>Import</NavLink>
                     <NavLink to="/categories" className={navClass}>Categories</NavLink>
+                    <NavLink to="/rules" className={navClass}>Rules</NavLink>
                 </nav>
                 <button type="button" className="logout-button" onClick={handleLogout}>
                     Log out

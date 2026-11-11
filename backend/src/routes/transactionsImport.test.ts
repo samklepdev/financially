@@ -87,3 +87,36 @@ test('imports a valid batch and reports the created count', async () => {
         await close();
     }
 });
+
+test('creates a new category and a matching rule when a row proposes newCategoryName with no category_id', async () => {
+    const {url, close} = await listen(app);
+    try {
+        const cookie = await loginCookie(url);
+        const res = await fetch(`${url}/api/v1/transactions/import`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', Cookie: cookie},
+            body: JSON.stringify({
+                transactions: [
+                    {
+                        date: '2026-11-01', description: 'Yarn Barn Austin', amount_cents: -1200,
+                        category_id: null, bill_id: null, newCategoryName: 'Hobbies HTTP Test',
+                    },
+                ],
+            }),
+        });
+        assert.equal(res.status, 201);
+
+        const categoriesRes = await fetch(`${url}/api/v1/categories`, {headers: {Cookie: cookie}});
+        const {data: categories} = await categoriesRes.json();
+        const created = categories.find((c: {name: string}) => c.name === 'Hobbies HTTP Test');
+        assert.ok(created);
+
+        const rulesRes = await fetch(`${url}/api/v1/category-rules`, {headers: {Cookie: cookie}});
+        const {data: rules} = await rulesRes.json();
+        assert.ok(rules.some((r: {pattern: string, category_id: number}) =>
+            r.pattern === 'Yarn Barn Austin' && r.category_id === created.id
+        ));
+    } finally {
+        await close();
+    }
+});
