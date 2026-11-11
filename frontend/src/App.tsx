@@ -5,6 +5,11 @@ import type {Transaction} from "./types/transaction.ts";
 import type {Category} from "./types/category.ts";
 import {formatMoney} from "./helpers/money.ts";
 import {categoryName, monthKey, monthLabel, shiftMonth} from "./helpers/ledger.ts";
+import RangeSelect from "./dashboard/RangeSelect.tsx";
+import RunningBalanceChart from "./dashboard/charts/RunningBalanceChart.tsx";
+import SpendingTrendChart from "./dashboard/charts/SpendingTrendChart.tsx";
+import OutflowsDonut from "./dashboard/charts/OutflowsDonut.tsx";
+import {runningBalanceSeries, spendingTrendSeries, outflowsByCategory, type DashboardRange} from "./helpers/dashboardMetrics.ts";
 import "./styles/ledger.css"
 import './App.css'
 
@@ -14,6 +19,7 @@ function App() {
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [month, setMonth] = useState<string>(() => monthKey(new Date().toISOString()));
+    const [range, setRange] = useState<DashboardRange>('90d');
 
     useEffect(() => {
         transactionApiService.getAllTransactions().then((t) => {
@@ -46,8 +52,28 @@ function App() {
         return {credit, debit, net: credit + debit}
     }, [visible])
 
+    const balanceSeries = useMemo(
+        () => runningBalanceSeries(transactions ?? [], range),
+        [transactions, range]
+    );
+    const spendSeries = useMemo(
+        () => spendingTrendSeries(transactions ?? [], range),
+        [transactions, range]
+    );
+    const outflows = useMemo(
+        () => outflowsByCategory(transactions ?? [], categories, range),
+        [transactions, categories, range]
+    );
+
     return (
         <>
+            <RangeSelect value={range} onChange={setRange}/>
+            <section className="chart-grid" aria-label="Financial charts">
+                <RunningBalanceChart data={balanceSeries}/>
+                <SpendingTrendChart data={spendSeries}/>
+                <OutflowsDonut data={outflows}/>
+            </section>
+
             <div className="month-switch">
                 <button type="button" onClick={() => setMonth((m) => shiftMonth(m, -1))} aria-label="Previous month">‹</button>
                 <span className="month-label">{monthLabel(month)}</span>
