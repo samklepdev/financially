@@ -4,6 +4,7 @@ import {
     createTransaction, deleteTransaction,
     getAllTransactions,
     getTransactionById,
+    suggestCategoryForDescription,
     updateTransaction
 } from "../controllers/transactions.controller.ts";
 import {previewImport, confirmImport} from "../controllers/transactionsImport.controller.ts";
@@ -14,6 +15,7 @@ export const transactionsRouter = express.Router()
 
 transactionsRouter.get('/', getAllTransactions);
 transactionsRouter.post('/', createTransaction);
+transactionsRouter.post('/suggest-category', suggestCategoryForDescription);
 transactionsRouter.post('/import/preview', upload.single('file'), previewImport);
 transactionsRouter.post('/import', confirmImport);
 transactionsRouter.get('/:id', getTransactionById);

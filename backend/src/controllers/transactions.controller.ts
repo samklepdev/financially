@@ -1,8 +1,11 @@
 import type { Request, Response } from 'express';
 import {validateTransaction} from "../helpers/transactionValidation.ts";
 import {TransactionService} from "../services/transactions.service.ts";
+import {CategoryRuleService} from "../services/categoryRules.service.ts";
+import {suggestCategories} from "../services/ollamaCategorySuggester.service.ts";
 
 const transactionService = new TransactionService();
+const categoryRuleService = new CategoryRuleService();
 
 /**
  * Retrieves all transactions from the database, ordered by date and identifier in descending order,
@@ -138,4 +141,48 @@ export function deleteTransaction(req: Request<{id: string}>, res: Response) {
     }
 
     return res.status(204).end();
+}
+
+/**
+ * Suggests a category for a transaction description without creating anything,
+ * for the manual "add transaction" form. Tries exact-description history, then
+ * keyword category rules, then falls back to asking the local Ollama model —
+ * the same three-layer signal stack import preview uses, applied to a single
+ * description instead of a batch. Always responds 200 with a suggestion object;
+ * "no suggestion found" (including Ollama being unreachable) is represented by
+ * category_id: null, aiSuggested: false rather than an error.
+ *
+ * @param req Express request containing the transaction description in the request body.
+ * @param res Express response used to return the suggestion or a validation error.
+ * @return The HTTP response containing a category_id/aiSuggested/proposedCategoryName suggestion.
+ */
+export async function suggestCategoryForDescription(req: Request, res: Response) {
+    const description = typeof req.body?.description === 'string' ? req.body.description.trim() : '';
+    if (description === '') {
+        return res.status(400).json({error: 'description is required'});
+    }
+
+    const category_id = transactionService.findRecentCategoryForDescription(description)
+        ?? categoryRuleService.findCategoryForDescription(description);
+
+    if (category_id !== null) {
+        return res.status(200).json({data: {category_id, aiSuggested: false, proposedCategoryName: null}});
+    }
+
+    const suggestions = await suggestCategories([description]);
+    const suggestion = suggestions[description];
+
+    if (!suggestion || suggestion.kind === 'none') {
+        return res.status(200).json({data: {category_id: null, aiSuggested: false, proposedCategoryName: null}});
+    }
+
+    if (suggestion.kind === 'existing') {
+        return res.status(200).json({
+            data: {category_id: suggestion.categoryId, aiSuggested: true, proposedCategoryName: null},
+        });
+    }
+
+    return res.status(200).json({
+        data: {category_id: null, aiSuggested: true, proposedCategoryName: suggestion.name},
+    });
 }
