@@ -900,7 +900,7 @@ function RunningBalanceChart({data}: Props) {
                     <XAxis dataKey="date" hide/>
                     <YAxis hide domain={['auto', 'auto']}/>
                     <Tooltip
-                        formatter={(value: number) => formatMoney(value)}
+                        formatter={(value) => formatMoney(Number(value))}
                         contentStyle={{background: 'var(--ink-raised)', border: '1px solid var(--rule-on-ink)', borderRadius: 6}}
                     />
                     <Line type="monotone" dataKey="balanceCents" stroke="var(--credit)" strokeWidth={2} dot={false}/>
@@ -932,7 +932,7 @@ function SpendingTrendChart({data}: Props) {
                     <XAxis dataKey="date" hide/>
                     <YAxis hide/>
                     <Tooltip
-                        formatter={(value: number) => formatMoney(value)}
+                        formatter={(value) => formatMoney(Number(value))}
                         contentStyle={{background: 'var(--ink-raised)', border: '1px solid var(--rule-on-ink)', borderRadius: 6}}
                     />
                     <Area type="monotone" dataKey="spendCents" stroke="var(--debit)" fill="var(--debit)" fillOpacity={0.25}/>
