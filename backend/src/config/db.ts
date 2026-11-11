@@ -35,6 +35,13 @@ db.exec(`
         expires_at TEXT NOT NULL,
         created_at TEXT NOT NULL
     ) STRICT;
+
+    CREATE TABLE IF NOT EXISTS category_rules(
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        pattern TEXT NOT NULL,
+        category_id INTEGER NOT NULL,
+        FOREIGN KEY (category_id) REFERENCES categories(id) ON DELETE CASCADE
+    ) STRICT;
 `)
 
 // SQLite has no `ALTER TABLE ... ADD COLUMN IF NOT EXISTS`, so guard it by
