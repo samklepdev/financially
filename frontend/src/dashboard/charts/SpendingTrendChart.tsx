@@ -16,7 +16,7 @@ function SpendingTrendChart({data}: Props) {
                         formatter={(value) => formatMoney(Number(value))}
                         contentStyle={{background: 'var(--ink-raised)', border: '1px solid var(--rule-on-ink)', borderRadius: 6}}
                     />
-                    <Area type="monotone" dataKey="spendCents" stroke="var(--debit)" fill="var(--debit)" fillOpacity={0.25}/>
+                    <Area type="monotone" dataKey="spendCents" name="Spent" stroke="var(--debit)" fill="var(--debit)" fillOpacity={0.25}/>
                 </AreaChart>
             </ResponsiveContainer>
         </article>
