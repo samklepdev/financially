@@ -1,3 +1,58 @@
+.import-format-toggle {
+  display: flex;
+  gap: 0.5rem;
+  margin-bottom: 1rem;
+}
+
+.import-format-button {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  background: none;
+  color: var(--text-on-ink);
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 999px;
+  padding: 0.4rem 0.9rem;
+  cursor: pointer;
+}
+
+.import-format-button--active {
+  background: var(--credit-dim);
+  color: var(--text-on-ink-strong);
+  border-color: var(--credit-dim);
+}
+
+.import-csv-mapping {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 1rem;
+  margin-top: 1rem;
+}
+
+.import-csv-mapping-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-on-ink);
+}
+
+.import-csv-mapping-field select {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  text-transform: none;
+  letter-spacing: normal;
+  color: var(--text-on-ink-strong);
+  background: var(--ink-raised);
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 4px;
+  padding: 0.45rem 0.6rem;
+  min-width: 10rem;
+}
+
 .import-picker {
   margin-bottom: 1.5rem;
 }
