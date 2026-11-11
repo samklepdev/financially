@@ -29,12 +29,13 @@ export async function previewImport(req: Request, res: Response) {
         return res.status(400).json({error: message});
     }
 
-    const withDuplicateFlags = transactions.map((t) => ({
+    const withSuggestions = transactions.map((t) => ({
         ...t,
+        category_id: transactionService.findRecentCategoryForDescription(t.description),
         isDuplicate: transactionService.existsSimilar(t.date, t.description, t.amount_cents),
     }));
 
-    return res.status(200).json({data: {transactions: withDuplicateFlags}});
+    return res.status(200).json({data: {transactions: withSuggestions}});
 }
 
 /**

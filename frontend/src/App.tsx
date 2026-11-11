@@ -1,13 +1,16 @@
 import {useEffect, useMemo, useState} from "react";
 import {transactionApiService} from "./services/TransactionApiService.ts";
+import {categoryApiService} from "./services/CategoryApiService.ts";
 import type {Transaction} from "./types/transaction.ts";
+import type {Category} from "./types/category.ts";
 import {formatMoney} from "./helpers/money.ts";
-import {categoryLabel, monthKey, monthLabel, shiftMonth} from "./helpers/ledger.ts";
+import {categoryName, monthKey, monthLabel, shiftMonth} from "./helpers/ledger.ts";
 import "./styles/ledger.css"
 import './App.css'
 
 function App() {
     const [transactions, setTransactions] = useState<Transaction[]>();
+    const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [month, setMonth] = useState<string>(() => monthKey(new Date().toISOString()));
@@ -24,6 +27,10 @@ function App() {
             setLoading(false)
         })
         // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [])
+
+    useEffect(() => {
+        categoryApiService.getAllCategories().then(setCategories).catch(() => {});
     }, [])
 
     const visible = useMemo(
@@ -73,7 +80,7 @@ function App() {
                         <div className="ledger-row__main">
                             <time className="ledger-date" dateTime={t.date}>{t.date}</time>
                             <span className="ledger-desc">{t.description}</span>
-                            <span className="ledger-category">{categoryLabel(t.category_id)}</span>
+                            <span className="ledger-category">{categoryName(categories, t.category_id)}</span>
                         </div>
                         <div className="ledger-row__amount">
                             <span className={`ledger-amount ${t.amount_cents < 0 ? 'debit' : 'credit'}`}>

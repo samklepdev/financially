@@ -1,8 +1,10 @@
 import {useEffect, useMemo, useState} from "react";
 import type {Transaction} from "../types/transaction.ts";
+import type {Category} from "../types/category.ts";
 import {transactionApiService} from "../services/TransactionApiService.ts";
+import {categoryApiService} from "../services/CategoryApiService.ts";
 import {formatMoney} from "../helpers/money.ts";
-import {categoryLabel, monthKey, monthLabel} from "../helpers/ledger.ts";
+import {categoryName, monthKey, monthLabel} from "../helpers/ledger.ts";
 import "../styles/ledger.css"
 import './Transactions.css'
 
@@ -16,10 +18,12 @@ function categoryFilterKey(categoryId: number | null): string {
 
 function Transactions() {
     const [transactions, setTransactions] = useState<Transaction[]>();
+    const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [month, setMonth] = useState<string>(ALL_MONTHS);
     const [category, setCategory] = useState<string>(ALL_CATEGORIES);
+    const [editingCategoryFor, setEditingCategoryFor] = useState<number | null>(null);
 
     useEffect(() => {
         transactionApiService.getAllTransactions().then((t) => {
@@ -31,6 +35,28 @@ function Transactions() {
         })
     }, [])
 
+    useEffect(() => {
+        categoryApiService.getAllCategories().then(setCategories).catch(() => {});
+    }, [])
+
+    async function handleCategoryChange(t: Transaction, value: string) {
+        const category_id = value === '' ? null : Number(value);
+        setEditingCategoryFor(null);
+        setError(null);
+        try {
+            const updated = await transactionApiService.updateTransaction(t.id, {
+                date: t.date,
+                description: t.description,
+                amount_cents: t.amount_cents,
+                category_id,
+                bill_id: t.bill_id,
+            });
+            setTransactions((prev) => (prev ?? []).map((tx) => tx.id === t.id ? updated : tx));
+        } catch (err) {
+            setError(err instanceof Error ? err.message : "Could not update this transaction's category");
+        }
+    }
+
     const sorted = useMemo(
         () => [...(transactions ?? [])].sort((a, b) => b.date.localeCompare(a.date)),
         [transactions]
@@ -41,7 +67,7 @@ function Transactions() {
         return [...keys].sort().reverse()
     }, [sorted])
 
-    const categories = useMemo(() => {
+    const categoryFilterKeys = useMemo(() => {
         const keys = new Set(sorted.map((t) => categoryFilterKey(t.category_id)))
         return [...keys].sort()
     }, [sorted])
@@ -84,9 +110,9 @@ function Transactions() {
                     <span>Category</span>
                     <select value={category} onChange={(e) => setCategory(e.target.value)}>
                         <option value={ALL_CATEGORIES}>All categories</option>
-                        {categories.map((key) => (
+                        {categoryFilterKeys.map((key) => (
                             <option key={key} value={key}>
-                                {key === UNCATEGORIZED ? 'Uncategorized' : `Cat #${key}`}
+                                {key === UNCATEGORIZED ? 'Uncategorized' : categoryName(categories, Number(key))}
                             </option>
                         ))}
                     </select>
@@ -114,7 +140,28 @@ function Transactions() {
                                     <div className="ledger-row__main">
                                         <time className="ledger-date" dateTime={t.date}>{t.date}</time>
                                         <span className="ledger-desc">{t.description}</span>
-                                        <span className="ledger-category">{categoryLabel(t.category_id)}</span>
+                                        {editingCategoryFor === t.id ? (
+                                            <select
+                                                className="ledger-category-select"
+                                                autoFocus
+                                                value={t.category_id ?? ''}
+                                                onChange={(e) => handleCategoryChange(t, e.target.value)}
+                                                onBlur={() => setEditingCategoryFor(null)}
+                                            >
+                                                <option value="">Uncategorized</option>
+                                                {categories.map((c) => (
+                                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                                ))}
+                                            </select>
+                                        ) : (
+                                            <button
+                                                type="button"
+                                                className="ledger-category ledger-category-button"
+                                                onClick={() => setEditingCategoryFor(t.id)}
+                                            >
+                                                {categoryName(categories, t.category_id)}
+                                            </button>
+                                        )}
                                     </div>
                                     <div className="ledger-row__amount">
                                         <span className={`ledger-amount ${t.amount_cents < 0 ? 'debit' : 'credit'}`}>

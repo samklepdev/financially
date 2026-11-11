@@ -15,3 +15,13 @@ test('sessions table accepts an insert and round-trips it', () => {
     assert.equal(row.id, 'abc123');
     assert.equal(row.expires_at, '2099-01-01T00:00:00.000Z');
 });
+
+test('categories table has a color column with a default value', () => {
+    db.prepare('INSERT INTO categories (name) VALUES (?)').run('Groceries');
+
+    const row = db.prepare('SELECT * FROM categories WHERE name = ?').get('Groceries') as
+        {id: number, name: string, color: string} | undefined;
+
+    assert.ok(row);
+    assert.equal(row.color, '#6b9478');
+});

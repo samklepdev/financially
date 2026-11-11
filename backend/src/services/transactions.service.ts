@@ -75,6 +75,23 @@ export class TransactionService {
     }
 
     /**
+     * Finds the category most recently assigned to a transaction with this
+     * exact description. Used to suggest a category for a newly imported
+     * transaction that looks like one the user has already categorized.
+     *
+     * @return The matching category_id, or null if no categorized
+     * transaction shares this description.
+     */
+    findRecentCategoryForDescription(description: string): number | null {
+        const row = db.prepare(
+            `SELECT category_id FROM transactions
+             WHERE description = ? AND category_id IS NOT NULL
+             ORDER BY date DESC, id DESC LIMIT 1`
+        ).get(description) as {category_id: number} | undefined;
+        return row?.category_id ?? null;
+    }
+
+    /**
      * Inserts every transaction in one all-or-nothing database transaction.
      *
      * @throws Error (and rolls back every insert in this batch) if any row fails,

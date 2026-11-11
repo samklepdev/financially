@@ -1,7 +1,10 @@
-import {useState, type ChangeEvent} from "react";
+import {useEffect, useState, type ChangeEvent} from "react";
 import {importApiService} from "../services/ImportApiService.ts";
+import {categoryApiService} from "../services/CategoryApiService.ts";
 import type {ImportCandidate, NewTransaction} from "../types/transaction.ts";
+import type {Category} from "../types/category.ts";
 import {formatMoney} from "../helpers/money.ts";
+import {categoryName} from "../helpers/ledger.ts";
 import "../styles/ledger.css"
 import './Import.css'
 
@@ -13,9 +16,15 @@ function toNewTransaction({selected, isDuplicate, ...t}: Candidate): NewTransact
 
 function Import() {
     const [candidates, setCandidates] = useState<Candidate[]>([]);
+    const [categories, setCategories] = useState<Category[]>([]);
     const [loading, setLoading] = useState(false);
     const [error, setError] = useState<string | null>(null);
     const [result, setResult] = useState<string | null>(null);
+    const [editingCategoryFor, setEditingCategoryFor] = useState<number | null>(null);
+
+    useEffect(() => {
+        categoryApiService.getAllCategories().then(setCategories).catch(() => {});
+    }, [])
 
     async function handleFileChange(e: ChangeEvent<HTMLInputElement>) {
         const file = e.target.files?.[0];
@@ -41,6 +50,12 @@ function Import() {
 
     function toggle(index: number) {
         setCandidates((prev) => prev.map((c, i) => i === index ? {...c, selected: !c.selected} : c));
+    }
+
+    function updateCandidateCategory(index: number, value: string) {
+        const category_id = value === '' ? null : Number(value);
+        setCandidates((prev) => prev.map((c, i) => i === index ? {...c, category_id} : c));
+        setEditingCategoryFor(null);
     }
 
     async function handleConfirm() {
@@ -88,9 +103,33 @@ function Import() {
                                 />
                                 <div className="ledger-row__main">
                                     <time className="ledger-date" dateTime={c.date}>{c.date}</time>
-                                    <span className="ledger-desc">{c.description}</span>
-                                    {c.isDuplicate && (
-                                        <span className="ledger-category import-duplicate">Possible duplicate</span>
+                                    <span className="ledger-desc">
+                                        {c.description}
+                                        {c.isDuplicate && (
+                                            <span className="import-duplicate-badge">Possible duplicate</span>
+                                        )}
+                                    </span>
+                                    {editingCategoryFor === i ? (
+                                        <select
+                                            className="ledger-category-select"
+                                            autoFocus
+                                            value={c.category_id ?? ''}
+                                            onChange={(e) => updateCandidateCategory(i, e.target.value)}
+                                            onBlur={() => setEditingCategoryFor(null)}
+                                        >
+                                            <option value="">Uncategorized</option>
+                                            {categories.map((cat) => (
+                                                <option key={cat.id} value={cat.id}>{cat.name}</option>
+                                            ))}
+                                        </select>
+                                    ) : (
+                                        <button
+                                            type="button"
+                                            className="ledger-category ledger-category-button"
+                                            onClick={() => setEditingCategoryFor(i)}
+                                        >
+                                            {categoryName(categories, c.category_id)}
+                                        </button>
                                     )}
                                 </div>
                                 <div className="ledger-row__amount">
