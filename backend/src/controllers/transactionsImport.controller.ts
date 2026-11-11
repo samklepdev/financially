@@ -3,6 +3,7 @@ import {parseCashAppStatementPdf} from '../services/cashAppStatementParser.ts';
 import {validateTransaction} from '../helpers/transactionValidation.ts';
 import {TransactionService} from '../services/transactions.service.ts';
 import {CategoryRuleService} from '../services/categoryRules.service.ts';
+import {suggestCategories} from '../services/ollamaCategorySuggester.service.ts';
 import type {NewTransaction} from '../types/transaction.ts';
 
 const transactionService = new TransactionService();
@@ -31,12 +32,25 @@ export async function previewImport(req: Request, res: Response) {
         return res.status(400).json({error: message});
     }
 
-    const withSuggestions = transactions.map((t) => ({
+    const withRuleSuggestions = transactions.map((t) => ({
         ...t,
         category_id: transactionService.findRecentCategoryForDescription(t.description)
             ?? categoryRuleService.findCategoryForDescription(t.description),
         isDuplicate: transactionService.existsSimilar(t.date, t.description, t.amount_cents),
     }));
+
+    const unmatchedDescriptions = withRuleSuggestions
+        .filter((t) => t.category_id === null)
+        .map((t) => t.description);
+    const aiSuggestions = await suggestCategories(unmatchedDescriptions);
+
+    const withSuggestions = withRuleSuggestions.map((t) => {
+        if (t.category_id !== null) {
+            return {...t, aiSuggested: false};
+        }
+        const suggested = aiSuggestions[t.description] ?? null;
+        return {...t, category_id: suggested, aiSuggested: suggested !== null};
+    });
 
     return res.status(200).json({data: {transactions: withSuggestions}});
 }
