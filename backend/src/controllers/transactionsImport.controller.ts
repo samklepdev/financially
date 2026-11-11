@@ -2,9 +2,11 @@ import type {Request, Response} from 'express';
 import {parseCashAppStatementPdf} from '../services/cashAppStatementParser.ts';
 import {validateTransaction} from '../helpers/transactionValidation.ts';
 import {TransactionService} from '../services/transactions.service.ts';
+import {CategoryRuleService} from '../services/categoryRules.service.ts';
 import type {NewTransaction} from '../types/transaction.ts';
 
 const transactionService = new TransactionService();
+const categoryRuleService = new CategoryRuleService();
 
 /**
  * Parses an uploaded PDF statement into candidate transactions, each flagged
@@ -31,7 +33,8 @@ export async function previewImport(req: Request, res: Response) {
 
     const withSuggestions = transactions.map((t) => ({
         ...t,
-        category_id: transactionService.findRecentCategoryForDescription(t.description),
+        category_id: transactionService.findRecentCategoryForDescription(t.description)
+            ?? categoryRuleService.findCategoryForDescription(t.description),
         isDuplicate: transactionService.existsSimilar(t.date, t.description, t.amount_cents),
     }));
 
