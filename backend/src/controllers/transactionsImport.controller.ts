@@ -4,6 +4,8 @@ import {validateTransaction} from '../helpers/transactionValidation.ts';
 import {TransactionService} from '../services/transactions.service.ts';
 import {CategoryRuleService} from '../services/categoryRules.service.ts';
 import {suggestCategories} from '../services/ollamaCategorySuggester.service.ts';
+import {resolveNewCategories} from '../services/importCategoryResolver.service.ts';
+import type {ImportConfirmItem} from '../services/importCategoryResolver.service.ts';
 import type {NewTransaction} from '../types/transaction.ts';
 
 const transactionService = new TransactionService();
@@ -80,6 +82,12 @@ export function confirmImport(req: Request, res: Response) {
         validated.push(result.value as NewTransaction);
     }
 
-    const created = transactionService.createMany(validated);
+    const withNewCategoryNames: ImportConfirmItem[] = validated.map((t, i) => ({
+        ...t,
+        newCategoryName: body[i]?.newCategoryName,
+    }));
+    const resolved = resolveNewCategories(withNewCategoryNames);
+
+    const created = transactionService.createMany(resolved);
     return res.status(201).json({data: {created: created.length}});
 }
