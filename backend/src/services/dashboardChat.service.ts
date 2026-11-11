@@ -1,12 +1,21 @@
 import type {Category} from "../types/category.ts";
 import type {Transaction} from "../types/transaction.ts";
 import type {ChatMessage, DashboardRange, FinancialSummary} from "../types/dashboardChat.ts";
+import {TransactionService} from "./transactions.service.ts";
+import {CategoryService} from "./categories.service.ts";
 
 const RANGE_DAYS: Record<Exclude<DashboardRange, 'all'>, number> = {
     '30d': 30,
     '90d': 90,
     '1y': 365,
 };
+
+const OLLAMA_URL = 'http://localhost:11434';
+const OLLAMA_MODEL = 'gemma4:e4b';
+const TIMEOUT_MS = 60_000;
+
+const transactionService = new TransactionService();
+const categoryService = new CategoryService();
 
 /**
  * Returns the ISO date (YYYY-MM-DD) that a range starts at, or null for
@@ -89,4 +98,52 @@ export function buildChatPrompt(messages: ChatMessage[], summary: FinancialSumma
         {role: 'system', content: lines.join('\n')},
         ...messages,
     ];
+}
+
+/**
+ * Asks the local Ollama model a finance question grounded in the user's
+ * actual transactions for the given range. Unlike the import-suggestion
+ * fallback, this throws on any failure (connection refused, timeout, bad
+ * response) rather than resolving silently — the caller is a direct user
+ * action and needs to know the assistant didn't answer.
+ */
+export async function askDashboardAssistant(
+    messages: ChatMessage[],
+    range: DashboardRange,
+    now: Date = new Date()
+): Promise<string> {
+    const transactions = transactionService.getAllTransactions();
+    const categories = categoryService.getAllCategories();
+    const summary = computeFinancialSummary(transactions, categories, range, now);
+    const prompt = buildChatPrompt(messages, summary);
+
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
+
+    try {
+        const response = await fetch(`${OLLAMA_URL}/api/chat`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                model: OLLAMA_MODEL,
+                stream: false,
+                think: false,
+                messages: prompt,
+            }),
+            signal: controller.signal,
+        });
+
+        if (!response.ok) {
+            throw new Error(`Ollama responded with status ${response.status}`);
+        }
+
+        const body = await response.json() as {message?: {content?: string}};
+        if (!body.message?.content) {
+            throw new Error('Ollama returned an empty response');
+        }
+
+        return body.message.content;
+    } finally {
+        clearTimeout(timeout);
+    }
 }

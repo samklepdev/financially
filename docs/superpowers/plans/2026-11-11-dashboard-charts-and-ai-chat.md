@@ -496,6 +496,17 @@ test('rejects an invalid range', async () => {
 
 test('returns 502 with a plain-language error when Ollama is unreachable', async () => {
     const {url, close} = await listen(app);
+    const originalFetch = globalThis.fetch;
+    // Simulate Ollama being down regardless of whether it's actually running
+    // on this machine, by rejecting only requests aimed at its port.
+    globalThis.fetch = (async (input: RequestInfo | URL, init?: RequestInit) => {
+        const target = typeof input === 'string' ? input : input.toString();
+        if (target.includes('11434')) {
+            throw new Error('simulated connection refused');
+        }
+        return originalFetch(input, init);
+    }) as typeof fetch;
+
     try {
         const cookie = await loginCookie(url);
         const res = await fetch(`${url}/api/v1/dashboard/chat`, {
@@ -507,17 +518,18 @@ test('returns 502 with a plain-language error when Ollama is unreachable', async
         const body = await res.json() as {error: string};
         assert.match(body.error, /Ollama/);
     } finally {
+        globalThis.fetch = originalFetch;
         await close();
     }
 });
 ```
 
-This last test relies on Ollama not running in the test/CI environment (a reasonable assumption for a local dev tool) to exercise the real failure path without mocking `fetch`.
+This last test stubs `globalThis.fetch` for requests aimed at Ollama's port (11434) only, so it deterministically exercises the 502 path on any machine — including ones (like this project's own dev machines) where Ollama is normally running locally.
 
 - [ ] **Step 6: Run the tests to verify they pass**
 
 Run (from `backend/`): `node --test src/routes/dashboardChat.test.ts`
-Expected: PASS, all 4 tests green. (If Ollama happens to be running locally, the last test will instead get a 200 — stop Ollama first, or skip verifying that one assertion locally; CI won't have it running.)
+Expected: PASS, all 4 tests green, regardless of whether Ollama is running locally.
 
 - [ ] **Step 7: Run the full backend test suite**
 
