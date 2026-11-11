@@ -23,25 +23,34 @@ export function buildOllamaPrompt(descriptions: string[], categories: Category[]
 
     return [
         'You are categorizing personal bank transactions for a budgeting app.',
-        `Allowed categories (choose only from this exact list): ${categoryNames.join(', ')}`,
+        `Existing categories: ${categoryNames.join(', ')}`,
         'Transaction descriptions to categorize:',
         ...uniqueDescriptions.map((d) => `- ${d}`),
         '',
         'Respond with ONLY a JSON object. Each key must be one of the exact ' +
-        'transaction descriptions listed above, verbatim. Each value must be ' +
-        'exactly one of the allowed category names, or null if none of them ' +
-        'fit well. Do not invent category names that are not in the list.',
+        'transaction descriptions listed above, verbatim. For each one: if one ' +
+        'of the existing categories fits well, use that exact category name as ' +
+        'the value. If none of the existing categories fit, propose a short, ' +
+        'sensible new category name instead (e.g. "Pet Care", "Home Improvement"). ' +
+        'If you genuinely cannot tell what the transaction is for, use null.',
     ].join('\n');
 }
 
+export type CategorySuggestion =
+    | {kind: 'existing', categoryId: number}
+    | {kind: 'new', name: string}
+    | {kind: 'none'};
+
 /**
- * Parses the model's JSON response into a description -> category_id map.
- * Any value that isn't an exact (case-insensitive) match for one of the
- * user's real categories resolves to null rather than throwing — this is a
- * best-effort suggestion, not a trusted data source, so a hallucinated or
- * malformed answer degrades to "no suggestion" instead of corrupting data.
+ * Parses the model's JSON response into a description -> CategorySuggestion
+ * map. A value matching an existing category (case-insensitively) resolves
+ * to {kind: 'existing'}; any other non-empty string is treated as a
+ * proposed new category name ({kind: 'new'}) rather than discarded — the
+ * caller (resolveNewCategories, confirm-time only) decides whether to
+ * actually create it. null, or anything that isn't a non-empty string,
+ * resolves to {kind: 'none'}.
  */
-export function parseOllamaResponse(raw: string, categories: Category[]): Record<string, number | null> {
+export function parseOllamaResponse(raw: string, categories: Category[]): Record<string, CategorySuggestion> {
     let parsed: unknown;
     try {
         parsed = JSON.parse(raw);
@@ -53,14 +62,16 @@ export function parseOllamaResponse(raw: string, categories: Category[]): Record
         return {};
     }
 
-    const result: Record<string, number | null> = {};
+    const result: Record<string, CategorySuggestion> = {};
     for (const [description, value] of Object.entries(parsed as Record<string, unknown>)) {
-        if (typeof value !== 'string') {
-            result[description] = null;
+        if (typeof value !== 'string' || value.trim() === '') {
+            result[description] = {kind: 'none'};
             continue;
         }
         const match = categories.find((c) => c.name.toLowerCase() === value.toLowerCase());
-        result[description] = match?.id ?? null;
+        result[description] = match
+            ? {kind: 'existing', categoryId: match.id}
+            : {kind: 'new', name: value.trim()};
     }
     return result;
 }
@@ -72,7 +83,7 @@ export function parseOllamaResponse(raw: string, categories: Category[]): Record
  * response) resolves to an empty map rather than throwing, so import keeps
  * working exactly as it does without this layer.
  */
-export async function suggestCategories(descriptions: string[]): Promise<Record<string, number | null>> {
+export async function suggestCategories(descriptions: string[]): Promise<Record<string, CategorySuggestion>> {
     if (descriptions.length === 0) {
         return {};
     }

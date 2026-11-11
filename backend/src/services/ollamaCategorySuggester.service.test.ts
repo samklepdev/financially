@@ -26,19 +26,19 @@ test('buildOllamaPrompt dedupes repeated descriptions', () => {
     assert.equal(occurrences, 1);
 });
 
-test('parseOllamaResponse resolves a valid category name to its id, case-insensitively', () => {
+test('parseOllamaResponse resolves a matching category name to an existing suggestion, case-insensitively', () => {
     const result = parseOllamaResponse('{"Walmart Houston TX": "groceries"}', categories);
-    assert.deepEqual(result, {'Walmart Houston TX': 1});
+    assert.deepEqual(result, {'Walmart Houston TX': {kind: 'existing', categoryId: 1}});
 });
 
-test('parseOllamaResponse keeps an explicit null as null', () => {
+test('parseOllamaResponse keeps an explicit null as a none suggestion', () => {
     const result = parseOllamaResponse('{"Some Merchant": null}', categories);
-    assert.deepEqual(result, {'Some Merchant': null});
+    assert.deepEqual(result, {'Some Merchant': {kind: 'none'}});
 });
 
-test('parseOllamaResponse resolves an unknown/hallucinated category name to null', () => {
+test('parseOllamaResponse treats an unrecognized category name as a proposed new category', () => {
     const result = parseOllamaResponse('{"Some Merchant": "Entertainment"}', categories);
-    assert.deepEqual(result, {'Some Merchant': null});
+    assert.deepEqual(result, {'Some Merchant': {kind: 'new', name: 'Entertainment'}});
 });
 
 test('parseOllamaResponse returns an empty object for malformed JSON', () => {
