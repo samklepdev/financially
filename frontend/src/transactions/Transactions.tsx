@@ -7,6 +7,7 @@ import {formatMoney} from "../helpers/money.ts";
 import {categoryName, monthKey, monthLabel} from "../helpers/ledger.ts";
 import SaveAsRuleButton from "../rules/SaveAsRuleButton.tsx";
 import AddTransactionForm from "./AddTransactionForm.tsx";
+import EditTransactionRow from "./EditTransactionRow.tsx";
 import "../styles/ledger.css"
 import './Transactions.css'
 
@@ -25,7 +26,7 @@ function Transactions() {
     const [error, setError] = useState<string | null>(null);
     const [month, setMonth] = useState<string>(ALL_MONTHS);
     const [category, setCategory] = useState<string>(ALL_CATEGORIES);
-    const [editingCategoryFor, setEditingCategoryFor] = useState<number | null>(null);
+    const [editingRowFor, setEditingRowFor] = useState<number | null>(null);
     const [showAddForm, setShowAddForm] = useState(false);
 
     useEffect(() => {
@@ -42,22 +43,14 @@ function Transactions() {
         categoryApiService.getAllCategories().then(setCategories).catch(() => {});
     }, [])
 
-    async function handleCategoryChange(t: Transaction, value: string) {
-        const category_id = value === '' ? null : Number(value);
-        setEditingCategoryFor(null);
-        setError(null);
-        try {
-            const updated = await transactionApiService.updateTransaction(t.id, {
-                date: t.date,
-                description: t.description,
-                amount_cents: t.amount_cents,
-                category_id,
-                bill_id: t.bill_id,
-            });
-            setTransactions((prev) => (prev ?? []).map((tx) => tx.id === t.id ? updated : tx));
-        } catch (err) {
-            setError(err instanceof Error ? err.message : "Could not update this transaction's category");
-        }
+    function handleTransactionSaved(t: Transaction) {
+        setTransactions((prev) => (prev ?? []).map((tx) => tx.id === t.id ? t : tx));
+        setEditingRowFor(null);
+    }
+
+    function handleTransactionDeleted(id: number) {
+        setTransactions((prev) => (prev ?? []).filter((tx) => tx.id !== id));
+        setEditingRowFor(null);
     }
 
     function handleTransactionCreated(t: Transaction) {
@@ -162,42 +155,40 @@ function Transactions() {
                         <h2 className="ledger-group__label">{monthLabel(key)}</h2>
                         <div className="ledger">
                             {items.map((t, i) => (
-                                <article className="ledger-row" key={t.id}>
-                                    <span className="ledger-index">{precedingCount + i + 1}</span>
-                                    <div className="ledger-row__main">
-                                        <time className="ledger-date" dateTime={t.date}>{t.date}</time>
-                                        <span className="ledger-desc">{t.description}</span>
-                                        {editingCategoryFor === t.id ? (
-                                            <select
-                                                className="ledger-category-select"
-                                                autoFocus
-                                                value={t.category_id ?? ''}
-                                                onChange={(e) => handleCategoryChange(t, e.target.value)}
-                                                onBlur={() => setEditingCategoryFor(null)}
-                                            >
-                                                <option value="">Uncategorized</option>
-                                                {categories.map((c) => (
-                                                    <option key={c.id} value={c.id}>{c.name}</option>
-                                                ))}
-                                            </select>
-                                        ) : (
-                                            <button
-                                                type="button"
-                                                className="ledger-category ledger-category-button"
-                                                onClick={() => setEditingCategoryFor(t.id)}
-                                            >
+                                editingRowFor === t.id ? (
+                                    <EditTransactionRow
+                                        key={t.id}
+                                        transaction={t}
+                                        categories={categories}
+                                        onSaved={handleTransactionSaved}
+                                        onDeleted={handleTransactionDeleted}
+                                        onCancel={() => setEditingRowFor(null)}
+                                    />
+                                ) : (
+                                    <article
+                                        className="ledger-row ledger-row--clickable"
+                                        key={t.id}
+                                        onClick={() => setEditingRowFor(t.id)}
+                                    >
+                                        <span className="ledger-index">{precedingCount + i + 1}</span>
+                                        <div className="ledger-row__main">
+                                            <time className="ledger-date" dateTime={t.date}>{t.date}</time>
+                                            <span className="ledger-desc">{t.description}</span>
+                                            <span className="ledger-category">
                                                 {categoryName(categories, t.category_id)}
-                                            </button>
-                                        )}
-                                        <SaveAsRuleButton description={t.description} categoryId={t.category_id}/>
-                                    </div>
-                                    <div className="ledger-row__amount">
-                                        <span className={`ledger-amount ${t.amount_cents < 0 ? 'debit' : 'credit'}`}>
-                                            {formatMoney(t.amount_cents)}
-                                        </span>
-                                        <span className="ledger-cents">{t.amount_cents}¢</span>
-                                    </div>
-                                </article>
+                                            </span>
+                                            <span onClick={(e) => e.stopPropagation()}>
+                                                <SaveAsRuleButton description={t.description} categoryId={t.category_id}/>
+                                            </span>
+                                        </div>
+                                        <div className="ledger-row__amount">
+                                            <span className={`ledger-amount ${t.amount_cents < 0 ? 'debit' : 'credit'}`}>
+                                                {formatMoney(t.amount_cents)}
+                                            </span>
+                                            <span className="ledger-cents">{t.amount_cents}¢</span>
+                                        </div>
+                                    </article>
+                                )
                             ))}
                         </div>
                     </section>

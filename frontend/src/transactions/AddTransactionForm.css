@@ -62,3 +62,13 @@
 .add-transaction-error {
   padding: 0;
 }
+
+.transaction-delete-button {
+  color: var(--debit-dim);
+  border-color: var(--debit-dim);
+}
+
+.transaction-delete-button--confirming {
+  background: var(--debit-dim);
+  color: var(--text-on-ink-strong);
+}
