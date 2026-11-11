@@ -22,3 +22,5 @@ export type CategorySuggestion = {
     aiSuggested: boolean;
     proposedCategoryName: string | null;
 };
+
+export type CsvRowError = {row: number, message: string};
