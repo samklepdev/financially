@@ -5,6 +5,7 @@ import type {ImportCandidate, NewTransaction} from "../types/transaction.ts";
 import type {Category} from "../types/category.ts";
 import {formatMoney} from "../helpers/money.ts";
 import {categoryName} from "../helpers/ledger.ts";
+import SaveAsRuleButton from "../rules/SaveAsRuleButton.tsx";
 import "../styles/ledger.css"
 import './Import.css'
 
@@ -131,6 +132,7 @@ function Import() {
                                             {categoryName(categories, c.category_id)}
                                         </button>
                                     )}
+                                    <SaveAsRuleButton description={c.description} categoryId={c.category_id}/>
                                 </div>
                                 <div className="ledger-row__amount">
                                     <span className={`ledger-amount ${c.amount_cents < 0 ? 'debit' : 'credit'}`}>

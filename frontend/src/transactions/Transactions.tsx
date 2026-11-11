@@ -5,6 +5,7 @@ import {transactionApiService} from "../services/TransactionApiService.ts";
 import {categoryApiService} from "../services/CategoryApiService.ts";
 import {formatMoney} from "../helpers/money.ts";
 import {categoryName, monthKey, monthLabel} from "../helpers/ledger.ts";
+import SaveAsRuleButton from "../rules/SaveAsRuleButton.tsx";
 import "../styles/ledger.css"
 import './Transactions.css'
 
@@ -162,6 +163,7 @@ function Transactions() {
                                                 {categoryName(categories, t.category_id)}
                                             </button>
                                         )}
+                                        <SaveAsRuleButton description={t.description} categoryId={t.category_id}/>
                                     </div>
                                     <div className="ledger-row__amount">
                                         <span className={`ledger-amount ${t.amount_cents < 0 ? 'debit' : 'credit'}`}>
