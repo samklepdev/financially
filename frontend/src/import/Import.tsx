@@ -1,18 +1,19 @@
 import {useEffect, useState, type ChangeEvent} from "react";
 import {importApiService} from "../services/ImportApiService.ts";
 import {categoryApiService} from "../services/CategoryApiService.ts";
-import type {ImportCandidate, NewTransaction} from "../types/transaction.ts";
+import type {ImportCandidate, ImportConfirmItem} from "../types/transaction.ts";
 import type {Category} from "../types/category.ts";
 import {formatMoney} from "../helpers/money.ts";
 import {categoryName} from "../helpers/ledger.ts";
 import SaveAsRuleButton from "../rules/SaveAsRuleButton.tsx";
+import NewCategoryBadge from "../rules/NewCategoryBadge.tsx";
 import "../styles/ledger.css"
 import './Import.css'
 
 type Candidate = ImportCandidate & {selected: boolean};
 
-function toNewTransaction({selected, isDuplicate, ...t}: Candidate): NewTransaction {
-    return t;
+function toNewTransaction({selected, isDuplicate, proposedCategoryName, ...t}: Candidate): ImportConfirmItem {
+    return proposedCategoryName ? {...t, newCategoryName: proposedCategoryName} : t;
 }
 
 function Import() {
@@ -55,8 +56,19 @@ function Import() {
 
     function updateCandidateCategory(index: number, value: string) {
         const category_id = value === '' ? null : Number(value);
-        setCandidates((prev) => prev.map((c, i) => i === index ? {...c, category_id, aiSuggested: false} : c));
+        setCandidates((prev) => prev.map((c, i) =>
+            i === index ? {...c, category_id, aiSuggested: false, proposedCategoryName: null} : c
+        ));
         setEditingCategoryFor(null);
+    }
+
+    function updateProposedCategoryName(index: number, name: string) {
+        setCandidates((prev) => prev.map((c, i) => i === index ? {...c, proposedCategoryName: name} : c));
+    }
+
+    function pickExistingInstead(index: number) {
+        setCandidates((prev) => prev.map((c, i) => i === index ? {...c, proposedCategoryName: null} : c));
+        setEditingCategoryFor(index);
     }
 
     async function handleConfirm() {
@@ -113,7 +125,13 @@ function Import() {
                                             <span className="import-ai-badge">AI guess</span>
                                         )}
                                     </span>
-                                    {editingCategoryFor === i ? (
+                                    {c.proposedCategoryName && editingCategoryFor !== i ? (
+                                        <NewCategoryBadge
+                                            name={c.proposedCategoryName}
+                                            onRename={(name) => updateProposedCategoryName(i, name)}
+                                            onPickExisting={() => pickExistingInstead(i)}
+                                        />
+                                    ) : editingCategoryFor === i ? (
                                         <select
                                             className="ledger-category-select"
                                             autoFocus
