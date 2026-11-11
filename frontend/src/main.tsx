@@ -19,6 +19,7 @@ import App from './App.tsx'
 import Transactions from './transactions/Transactions.tsx'
 import Import from './import/Import.tsx'
 import Categories from './categories/Categories.tsx'
+import Rules from './rules/Rules.tsx'
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
@@ -32,6 +33,7 @@ createRoot(document.getElementById('root')!).render(
               <Route path="/transactions" element={<Transactions/>}/>
               <Route path="/import" element={<Import/>}/>
               <Route path="/categories" element={<Categories/>}/>
+              <Route path="/rules" element={<Rules/>}/>
             </Route>
           </Route>
         </Routes>

@@ -1,0 +1,107 @@
+.rule-add {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+}
+
+.rule-add input[type="text"] {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--text-on-ink-strong);
+  background: var(--ink-raised);
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 4px;
+  padding: 0.5rem 0.7rem;
+  flex: 1;
+}
+
+.rule-add select {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--text-on-ink-strong);
+  background: var(--ink-raised);
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 4px;
+  padding: 0.5rem 0.7rem;
+}
+
+.rule-add input[type="text"]:focus-visible,
+.rule-add select:focus-visible,
+.rule-add button:focus-visible {
+  outline: 2px solid var(--due);
+  outline-offset: 2px;
+}
+
+.rule-add button {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-ink-strong);
+  background: none;
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 4px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.rule-add button:hover {
+  border-color: var(--text-on-ink);
+}
+
+.rule-add button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.rule-row {
+  gap: 0.85rem;
+}
+
+.rule-pattern {
+  font-family: var(--mono);
+  font-size: 0.85rem;
+  flex: 1;
+}
+
+.rule-category-select {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-paper);
+  background: var(--paper-dim);
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+}
+
+.rule-category-select:focus-visible {
+  outline: 2px solid var(--due);
+  outline-offset: 2px;
+}
+
+.rule-row button {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-paper);
+  background: none;
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.rule-row button:hover {
+  border-color: var(--text-on-paper);
+}
+
+.rule-row button:focus-visible {
+  outline: 2px solid var(--due);
+  outline-offset: 2px;
+}
+
+@media (max-width: 640px) {
+  .rule-add {
+    flex-wrap: wrap;
+  }
+}
