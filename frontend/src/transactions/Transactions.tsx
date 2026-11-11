@@ -6,6 +6,7 @@ import {categoryApiService} from "../services/CategoryApiService.ts";
 import {formatMoney} from "../helpers/money.ts";
 import {categoryName, monthKey, monthLabel} from "../helpers/ledger.ts";
 import SaveAsRuleButton from "../rules/SaveAsRuleButton.tsx";
+import AddTransactionForm from "./AddTransactionForm.tsx";
 import "../styles/ledger.css"
 import './Transactions.css'
 
@@ -25,6 +26,7 @@ function Transactions() {
     const [month, setMonth] = useState<string>(ALL_MONTHS);
     const [category, setCategory] = useState<string>(ALL_CATEGORIES);
     const [editingCategoryFor, setEditingCategoryFor] = useState<number | null>(null);
+    const [showAddForm, setShowAddForm] = useState(false);
 
     useEffect(() => {
         transactionApiService.getAllTransactions().then((t) => {
@@ -56,6 +58,15 @@ function Transactions() {
         } catch (err) {
             setError(err instanceof Error ? err.message : "Could not update this transaction's category");
         }
+    }
+
+    function handleTransactionCreated(t: Transaction) {
+        setTransactions((prev) => [...(prev ?? []), t]);
+        setShowAddForm(false);
+    }
+
+    function handleCategoryCreated(c: Category) {
+        setCategories((prev) => [...prev, c].sort((a, b) => a.name.localeCompare(b.name)));
     }
 
     const sorted = useMemo(
@@ -97,6 +108,21 @@ function Transactions() {
 
     return (
         <>
+            <div className="ledger-toolbar">
+                <button type="button" className="ledger-add-button" onClick={() => setShowAddForm(true)}>
+                    + Add transaction
+                </button>
+            </div>
+
+            {showAddForm && (
+                <AddTransactionForm
+                    categories={categories}
+                    onCreated={handleTransactionCreated}
+                    onCategoryCreated={handleCategoryCreated}
+                    onCancel={() => setShowAddForm(false)}
+                />
+            )}
+
             <div className="ledger-filters">
                 <label className="ledger-filter">
                     <span>Month</span>
