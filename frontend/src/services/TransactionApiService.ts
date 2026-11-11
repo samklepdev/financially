@@ -1,5 +1,7 @@
+import axios from "axios";
+import type {ApiErrorBody, ApiResponse} from "../types/api.ts";
 import {BaseApiService} from "./BaseApiService.ts";
-import type {NewTransaction, Transaction} from "../types/transaction.ts";
+import type {CategorySuggestion, NewTransaction, Transaction} from "../types/transaction.ts";
 
 export class TransactionApiService extends BaseApiService {
 
@@ -34,6 +36,30 @@ export class TransactionApiService extends BaseApiService {
      */
     createTransaction(body: NewTransaction): Promise<Transaction> {
         return this.create<Transaction>(body);
+    }
+
+    /**
+     * Asks the backend to suggest a category for a transaction description,
+     * for the manual add-transaction form. Resolves to {category_id: null,
+     * aiSuggested: false, proposedCategoryName: null} when nothing could be
+     * suggested — only a genuine request failure (network/auth/server error)
+     * rejects.
+     *
+     * @param description The transaction description to suggest a category for.
+     * @return A promise that resolves to the suggested category.
+     */
+    async suggestCategory(description: string): Promise<CategorySuggestion> {
+        try {
+            const res = await this.http.post<ApiResponse<CategorySuggestion>>(
+                `${this.path}/suggest-category`, {description}
+            );
+            return res.data.data;
+        } catch (error) {
+            if (axios.isAxiosError<ApiErrorBody>(error)) {
+                throw new Error(error.response?.data?.error ?? error.message, {cause: error});
+            }
+            throw error;
+        }
     }
 
     /**
