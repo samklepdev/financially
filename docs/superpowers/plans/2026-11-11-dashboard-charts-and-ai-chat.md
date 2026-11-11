@@ -187,8 +187,8 @@ export function rangeStartDate(range: DashboardRange, now: Date = new Date()): s
     if (range === 'all') {
         return null;
     }
-    const start = new Date(now);
-    start.setDate(start.getDate() - RANGE_DAYS[range]);
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    start.setUTCDate(start.getUTCDate() - RANGE_DAYS[range]);
     return start.toISOString().slice(0, 10);
 }
 
@@ -583,8 +583,8 @@ export function rangeStartDate(range: DashboardRange, now: Date = new Date()): s
     if (range === 'all') {
         return null;
     }
-    const start = new Date(now);
-    start.setDate(start.getDate() - RANGE_DAYS[range]);
+    const start = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()));
+    start.setUTCDate(start.getUTCDate() - RANGE_DAYS[range]);
     return start.toISOString().slice(0, 10);
 }
 
