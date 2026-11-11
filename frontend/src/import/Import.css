@@ -19,6 +19,14 @@
   flex-shrink: 0;
 }
 
+.import-ai-badge {
+  margin-left: 0.5rem;
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.03em;
+  color: var(--credit-dim);
+}
+
 .import-duplicate-badge {
   margin-left: 0.5rem;
   font-family: var(--mono);

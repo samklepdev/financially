@@ -55,7 +55,7 @@ function Import() {
 
     function updateCandidateCategory(index: number, value: string) {
         const category_id = value === '' ? null : Number(value);
-        setCandidates((prev) => prev.map((c, i) => i === index ? {...c, category_id} : c));
+        setCandidates((prev) => prev.map((c, i) => i === index ? {...c, category_id, aiSuggested: false} : c));
         setEditingCategoryFor(null);
     }
 
@@ -108,6 +108,9 @@ function Import() {
                                         {c.description}
                                         {c.isDuplicate && (
                                             <span className="import-duplicate-badge">Possible duplicate</span>
+                                        )}
+                                        {c.aiSuggested && (
+                                            <span className="import-ai-badge">AI guess</span>
                                         )}
                                     </span>
                                     {editingCategoryFor === i ? (

@@ -9,4 +9,4 @@ export type Transaction = {
 
 export type NewTransaction = Omit<Transaction, 'id'>;
 
-export type ImportCandidate = NewTransaction & {isDuplicate: boolean};
+export type ImportCandidate = NewTransaction & {isDuplicate: boolean; aiSuggested: boolean};
