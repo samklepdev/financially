@@ -23,7 +23,9 @@ export function buildOllamaPrompt(descriptions: string[], categories: Category[]
 
     return [
         'You are categorizing personal bank transactions for a budgeting app.',
-        `Existing categories: ${categoryNames.join(', ')}`,
+        categoryNames.length > 0
+            ? `Existing categories: ${categoryNames.join(', ')}`
+            : 'Existing categories: none yet — propose a sensible new category for every transaction.',
         'Transaction descriptions to categorize:',
         ...uniqueDescriptions.map((d) => `- ${d}`),
         '',
@@ -89,9 +91,6 @@ export async function suggestCategories(descriptions: string[]): Promise<Record<
     }
 
     const categories = categoryService.getAllCategories();
-    if (categories.length === 0) {
-        return {};
-    }
 
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), TIMEOUT_MS);
