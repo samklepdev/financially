@@ -106,3 +106,59 @@ manual "add category" flow does.
   "manually add **a** transaction" request.
 - Editing an existing transaction's description to re-trigger a suggestion —
   suggestions only apply to the new-transaction draft.
+
+## Addendum: full edit + delete on existing transactions
+
+**Context:** the manual-add form above only covers Create. The user also
+wants to edit and delete transactions already in the ledger — Read already
+existed (the `Transactions` page), and `PUT`/`DELETE /transactions/:id`
+already exist and are untouched by this addendum. This is a frontend-only
+change; no backend work is needed.
+
+**Replaces, not adds to, the existing category-only quick-editor:**
+`Transactions.tsx` currently lets you click a transaction's category badge
+to turn just that field into a `<select>` (`editingCategoryFor` state,
+`handleCategoryChange`). That interaction is replaced by a single, unified
+full-row editor rather than left to coexist with it.
+
+- New component `frontend/src/transactions/EditTransactionRow.tsx`, rendered
+  in place of a `ledger-row` for whichever transaction is being edited.
+  Pre-filled from the transaction (amount/sign split into an amount string
+  + expense/income select, same convention `AddTransactionForm` uses).
+  Reuses `AddTransactionForm.css`'s existing classes for the date/description/
+  amount inputs and the expense/income + category selects — no new input
+  styling needed.
+  - **Save** calls `transactionApiService.updateTransaction(id, {date,
+    description, amount_cents, category_id, bill_id})` — `bill_id` is
+    passed through unchanged from the original transaction since there's no
+    bill-picker UI (same exclusion as the add form). On success, the parent
+    replaces that transaction in its list and closes the editor.
+  - **Delete** is a two-click confirm local to the row: first click turns
+    the delete button into a "Confirm delete?" state; a second click (while
+    still in that state) calls `transactionApiService.deleteTransaction(id)`
+    and, on success, the parent removes the transaction from its list and
+    closes the editor. Clicking anywhere else on the row while in the
+    confirm state does nothing special — it's a plain two-click toggle, no
+    outside-click reset, consistent with this app not using modals/dialogs
+    elsewhere.
+  - **Cancel** just closes the editor, discarding any unsaved edits.
+
+- `Transactions.tsx` changes:
+  - `editingCategoryFor`/`handleCategoryChange` removed.
+  - New `editingRowFor: number | null` state. Clicking anywhere on a
+    non-editing row opens it (`setEditingRowFor(t.id)`), except clicks on
+    `SaveAsRuleButton`, which get `stopPropagation` so the existing
+    "+ Save as rule" action keeps working independently of row editing.
+  - Two new handlers: `handleTransactionSaved(t: Transaction)` (replace in
+    list, clear `editingRowFor`) and `handleTransactionDeleted(id: number)`
+    (filter out of list, clear `editingRowFor`).
+  - When `editingRowFor === t.id`, render `<EditTransactionRow>` instead of
+    the normal row markup for that transaction.
+
+**Out of scope (same reasons as the add form):** bill picker, any
+re-triggering of Ollama suggestions on edit (editing is for correcting
+already-known data, not guessing from scratch).
+
+**Testing:** frontend-only; `npx tsc -b --noEmit` plus a manual check in the
+running app (edit each field, cancel discards changes, delete requires two
+clicks, "+ Save as rule" still works without opening the row editor).
