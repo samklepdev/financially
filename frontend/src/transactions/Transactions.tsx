@@ -1,8 +1,10 @@
 import {useEffect, useMemo, useState} from "react";
 import type {Transaction} from "../types/transaction.ts";
 import type {Category} from "../types/category.ts";
+import type {Bill} from "../types/bill.ts";
 import {transactionApiService} from "../services/TransactionApiService.ts";
 import {categoryApiService} from "../services/CategoryApiService.ts";
+import {billApiService} from "../services/BillApiService.ts";
 import {formatMoney} from "../helpers/money.ts";
 import {categoryName, monthKey, monthLabel} from "../helpers/ledger.ts";
 import SaveAsRuleButton from "../rules/SaveAsRuleButton.tsx";
@@ -22,6 +24,7 @@ function categoryFilterKey(categoryId: number | null): string {
 function Transactions() {
     const [transactions, setTransactions] = useState<Transaction[]>();
     const [categories, setCategories] = useState<Category[]>([]);
+    const [bills, setBills] = useState<Bill[]>([]);
     const [loading, setLoading] = useState<boolean>(true);
     const [error, setError] = useState<string | null>(null);
     const [month, setMonth] = useState<string>(ALL_MONTHS);
@@ -41,6 +44,10 @@ function Transactions() {
 
     useEffect(() => {
         categoryApiService.getAllCategories().then(setCategories).catch(() => {});
+    }, [])
+
+    useEffect(() => {
+        billApiService.getAllBills().then(setBills).catch(() => {});
     }, [])
 
     function handleTransactionSaved(t: Transaction) {
@@ -110,6 +117,7 @@ function Transactions() {
             {showAddForm && (
                 <AddTransactionForm
                     categories={categories}
+                    bills={bills}
                     onCreated={handleTransactionCreated}
                     onCategoryCreated={handleCategoryCreated}
                     onCancel={() => setShowAddForm(false)}
@@ -160,6 +168,7 @@ function Transactions() {
                                         key={t.id}
                                         transaction={t}
                                         categories={categories}
+                                        bills={bills}
                                         onSaved={handleTransactionSaved}
                                         onDeleted={handleTransactionDeleted}
                                         onCancel={() => setEditingRowFor(null)}

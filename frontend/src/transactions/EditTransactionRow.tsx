@@ -1,5 +1,6 @@
 import {useState, type FormEvent} from "react";
 import type {Category} from "../types/category.ts";
+import type {Bill} from "../types/bill.ts";
 import type {Transaction} from "../types/transaction.ts";
 import {transactionApiService} from "../services/TransactionApiService.ts";
 import "../styles/ledger.css"
@@ -11,12 +12,13 @@ const INCOME = 'income';
 type Props = {
     transaction: Transaction;
     categories: Category[];
+    bills: Bill[];
     onSaved: (t: Transaction) => void;
     onDeleted: (id: number) => void;
     onCancel: () => void;
 };
 
-function EditTransactionRow({transaction, categories, onSaved, onDeleted, onCancel}: Props) {
+function EditTransactionRow({transaction, categories, bills, onSaved, onDeleted, onCancel}: Props) {
     const [date, setDate] = useState(transaction.date);
     const [description, setDescription] = useState(transaction.description);
     const [amount, setAmount] = useState((Math.abs(transaction.amount_cents) / 100).toFixed(2));
@@ -24,6 +26,7 @@ function EditTransactionRow({transaction, categories, onSaved, onDeleted, onCanc
         transaction.amount_cents < 0 ? EXPENSE : INCOME
     );
     const [categoryId, setCategoryId] = useState<number | null>(transaction.category_id);
+    const [billId, setBillId] = useState<number | null>(transaction.bill_id);
     const [submitting, setSubmitting] = useState(false);
     const [confirmingDelete, setConfirmingDelete] = useState(false);
     const [deleting, setDeleting] = useState(false);
@@ -44,8 +47,7 @@ function EditTransactionRow({transaction, categories, onSaved, onDeleted, onCanc
         try {
             const amount_cents = Math.round(amountValue * 100) * (amountType === EXPENSE ? -1 : 1);
             const updated = await transactionApiService.updateTransaction(transaction.id, {
-                date, description: description.trim(), amount_cents, category_id: categoryId,
-                bill_id: transaction.bill_id,
+                date, description: description.trim(), amount_cents, category_id: categoryId, bill_id: billId,
             });
             onSaved(updated);
         } catch (err) {
@@ -98,6 +100,16 @@ function EditTransactionRow({transaction, categories, onSaved, onDeleted, onCanc
                     <option value="">Uncategorized</option>
                     {categories.map((c) => (
                         <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                </select>
+                <select
+                    className="ledger-category-select"
+                    value={billId ?? ''}
+                    onChange={(e) => setBillId(e.target.value === '' ? null : Number(e.target.value))}
+                >
+                    <option value="">No bill</option>
+                    {bills.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
                     ))}
                 </select>
             </div>
