@@ -121,6 +121,7 @@ test('auto-links to a bill by match_pattern when one matches', async () => {
             headers: {'Content-Type': 'application/json', Cookie: cookie},
             body: JSON.stringify({
                 name: 'Netflix Suggest Test', amount_cents: 1599, due_day: 5, match_pattern: 'Netflix Suggest Test',
+                deferred_until: null,
             }),
         });
 

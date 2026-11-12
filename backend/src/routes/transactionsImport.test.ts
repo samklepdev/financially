@@ -131,6 +131,7 @@ test('previewCsvImport auto-links a candidate to a bill by match_pattern', async
             headers: {'Content-Type': 'application/json', Cookie: cookie},
             body: JSON.stringify({
                 name: 'CSV Import Bill Test', amount_cents: 1200, due_day: 1, match_pattern: 'CSV Import Bill Test',
+                deferred_until: null,
             }),
         });
 

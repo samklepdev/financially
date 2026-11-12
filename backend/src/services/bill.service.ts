@@ -18,6 +18,7 @@ export type UpcomingBill = {
     bill: Bill;
     dueDate: string;
     status: 'paid' | 'overdue' | 'upcoming';
+    markedPaid: boolean;
 };
 
 export type SuggestedBill = {
@@ -55,8 +56,12 @@ export class BillService {
      */
     createBill(bill: NewBill) {
         return db.prepare(
-            'INSERT INTO bills (name, amount_cents, due_day, match_pattern) VALUES (?, ?, ?, ?) RETURNING *'
-        ).get(bill.name, bill.amount_cents, bill.due_day, bill.match_pattern) as Bill;
+            `INSERT INTO bills (name, amount_cents, due_day, match_pattern, deferred_until, category_id, marked_paid_for)
+             VALUES (?, ?, ?, ?, ?, ?, ?) RETURNING *`
+        ).get(
+            bill.name, bill.amount_cents, bill.due_day, bill.match_pattern,
+            bill.deferred_until, bill.category_id, bill.marked_paid_for,
+        ) as Bill;
     }
 
     /**
@@ -68,8 +73,13 @@ export class BillService {
      */
     updateBill(id: number, bill: NewBill) {
         return db.prepare(
-            'UPDATE bills SET name = ?, amount_cents = ?, due_day = ?, match_pattern = ? WHERE id = ? RETURNING *'
-        ).get(bill.name, bill.amount_cents, bill.due_day, bill.match_pattern, id) as Bill | undefined;
+            `UPDATE bills SET name = ?, amount_cents = ?, due_day = ?, match_pattern = ?,
+                              deferred_until = ?, category_id = ?, marked_paid_for = ?
+             WHERE id = ? RETURNING *`
+        ).get(
+            bill.name, bill.amount_cents, bill.due_day, bill.match_pattern,
+            bill.deferred_until, bill.category_id, bill.marked_paid_for, id,
+        ) as Bill | undefined;
     }
 
     /**
@@ -103,13 +113,19 @@ export class BillService {
      * Computes each bill's current-cycle due date and payment status.
      * A bill is only included when its due date is overdue (in the past
      * this cycle) or within the next 14 days — bills due further out are
-     * omitted entirely. "Paid" means a transaction with this bill's id
-     * falls within a grace window centered on *this* cycle's due date:
-     * from 5 days before the due date (inclusive) up to 5 days before the
-     * next cycle's due date (exclusive). This keeps the window from
+     * omitted entirely. "Paid" means either a transaction with this bill's
+     * id falls within a grace window centered on *this* cycle's due date
+     * (from 5 days before the due date, inclusive, up to 5 days before the
+     * next cycle's due date, exclusive — this keeps the window from
      * reaching back far enough to pick up a payment that actually paid the
      * previous cycle, while still tolerating a payment made a few days
-     * early or a few days late.
+     * early or a few days late), or the user manually marked this exact
+     * cycle paid (`marked_paid_for` equals this cycle's due date) — for
+     * bills paid through a source this app doesn't see as a transaction.
+     * A manual mark only ever applies to the cycle it was set for: once
+     * "today" moves past that cycle's due date into the next one, the
+     * stale marker is lazily cleared back to null on the next call here,
+     * the same self-clearing pattern `deferred_until` uses.
      *
      * @param today Reference date for "now" (defaults to the current time); only its UTC calendar date is used.
      * @return Upcoming/overdue/paid bills, sorted by due date ascending.
@@ -120,26 +136,52 @@ export class BillService {
         const bills = this.getAllBills();
         const result: UpcomingBill[] = [];
 
+        const todayISO = toISODate(todayUTC);
+
         for (const bill of bills) {
-            const dueDate = dueDateForMonth(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), bill.due_day);
-            const nextDueDate = dueDateForMonth(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth() + 1, bill.due_day);
+            let dueDate = dueDateForMonth(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), bill.due_day);
+            let nextDueDate = dueDateForMonth(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth() + 1, bill.due_day);
+
+            if (bill.deferred_until !== null) {
+                if (bill.deferred_until > todayISO) {
+                    const deferredDate = new Date(`${bill.deferred_until}T00:00:00Z`);
+                    dueDate = deferredDate;
+                    nextDueDate = dueDateForMonth(deferredDate.getUTCFullYear(), deferredDate.getUTCMonth() + 1, bill.due_day);
+                } else {
+                    db.prepare('UPDATE bills SET deferred_until = NULL WHERE id = ?').run(bill.id);
+                }
+            }
 
             const daysUntilDue = Math.round((dueDate.getTime() - todayUTC.getTime()) / (24 * 60 * 60 * 1000));
             if (daysUntilDue > 14) {
                 continue;
             }
 
-            const windowStart = new Date(dueDate.getTime() - GRACE_PERIOD_MS);
-            const windowEnd = new Date(nextDueDate.getTime() - GRACE_PERIOD_MS);
+            const dueDateISO = toISODate(dueDate);
 
-            const paid = db.prepare(
-                'SELECT 1 FROM transactions WHERE bill_id = ? AND date >= ? AND date < ? LIMIT 1'
-            ).get(bill.id, toISODate(windowStart), toISODate(windowEnd)) !== undefined;
+            let paid: boolean;
+            let markedPaid = false;
+            if (bill.marked_paid_for === dueDateISO) {
+                paid = true;
+                markedPaid = true;
+            } else {
+                if (bill.marked_paid_for !== null) {
+                    db.prepare('UPDATE bills SET marked_paid_for = NULL WHERE id = ?').run(bill.id);
+                }
+
+                const windowStart = new Date(dueDate.getTime() - GRACE_PERIOD_MS);
+                const windowEnd = new Date(nextDueDate.getTime() - GRACE_PERIOD_MS);
+
+                paid = db.prepare(
+                    'SELECT 1 FROM transactions WHERE bill_id = ? AND date >= ? AND date < ? LIMIT 1'
+                ).get(bill.id, toISODate(windowStart), toISODate(windowEnd)) !== undefined;
+            }
 
             result.push({
                 bill,
-                dueDate: toISODate(dueDate),
+                dueDate: dueDateISO,
                 status: paid ? 'paid' : (daysUntilDue < 0 ? 'overdue' : 'upcoming'),
+                markedPaid,
             });
         }
 

@@ -7,7 +7,7 @@ const {BillService} = await import('./bill.service.ts');
 const service = new BillService();
 
 test('createBill inserts and returns the bill with an id', () => {
-    const created = service.createBill({name: 'Netflix', amount_cents: 1599, due_day: 5, match_pattern: 'netflix'});
+    const created = service.createBill({name: 'Netflix', amount_cents: 1599, due_day: 5, match_pattern: 'netflix', deferred_until: null, category_id: null, marked_paid_for: null});
     assert.ok(created.id);
     assert.equal(created.name, 'Netflix');
     assert.equal(created.amount_cents, 1599);
@@ -19,17 +19,33 @@ test('getBillById returns undefined for a missing id', () => {
     assert.equal(service.getBillById(999999), undefined);
 });
 
+test('createBill and updateBill persist category_id', async () => {
+    const {CategoryService} = await import('./categories.service.ts');
+    const categoryService = new CategoryService();
+    const category = categoryService.createCategory({name: 'Bill Category Test', color: '#6b9478'});
+
+    const created = service.createBill({
+        name: 'Categorized Create Test', amount_cents: 500, due_day: 1, match_pattern: '', deferred_until: null, category_id: category.id, marked_paid_for: null,
+    });
+    assert.equal(created.category_id, category.id);
+
+    const updated = service.updateBill(created.id, {
+        name: 'Categorized Create Test', amount_cents: 500, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null,
+    });
+    assert.equal(updated?.category_id, null);
+});
+
 test('getAllBills returns bills ordered by name', () => {
-    service.createBill({name: 'Zzzzz Sort Test', amount_cents: 500, due_day: 1, match_pattern: ''});
-    service.createBill({name: 'Aaaaa Sort Test', amount_cents: 500, due_day: 1, match_pattern: ''});
+    service.createBill({name: 'Zzzzz Sort Test', amount_cents: 500, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
+    service.createBill({name: 'Aaaaa Sort Test', amount_cents: 500, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     const names = service.getAllBills().map((b) => b.name);
     assert.ok(names.indexOf('Aaaaa Sort Test') < names.indexOf('Zzzzz Sort Test'));
 });
 
 test('updateBill changes fields and returns the row', () => {
-    const created = service.createBill({name: 'Spotify', amount_cents: 1099, due_day: 10, match_pattern: 'spotify'});
+    const created = service.createBill({name: 'Spotify', amount_cents: 1099, due_day: 10, match_pattern: 'spotify', deferred_until: null, category_id: null, marked_paid_for: null});
     const updated = service.updateBill(created.id, {
-        name: 'Spotify Premium', amount_cents: 1199, due_day: 12, match_pattern: 'spotify premium',
+        name: 'Spotify Premium', amount_cents: 1199, due_day: 12, match_pattern: 'spotify premium', deferred_until: null, category_id: null, marked_paid_for: null,
     });
     assert.equal(updated?.name, 'Spotify Premium');
     assert.equal(updated?.amount_cents, 1199);
@@ -38,12 +54,12 @@ test('updateBill changes fields and returns the row', () => {
 });
 
 test('updateBill returns undefined for a missing id', () => {
-    const updated = service.updateBill(999999, {name: 'Nope', amount_cents: 100, due_day: 1, match_pattern: ''});
+    const updated = service.updateBill(999999, {name: 'Nope', amount_cents: 100, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     assert.equal(updated, undefined);
 });
 
 test('deleteBill removes the row and reports changes', () => {
-    const created = service.createBill({name: 'Temp Bill', amount_cents: 500, due_day: 1, match_pattern: ''});
+    const created = service.createBill({name: 'Temp Bill', amount_cents: 500, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     const {changes} = service.deleteBill(created.id);
     assert.equal(changes, 1);
     assert.equal(service.getBillById(created.id), undefined);
@@ -53,7 +69,7 @@ test('deleting a bill sets bill_id to null on referencing transactions', async (
     const {TransactionService} = await import('./transactions.service.ts');
     const transactionService = new TransactionService();
 
-    const bill = service.createBill({name: 'Will Be Deleted', amount_cents: 500, due_day: 1, match_pattern: ''});
+    const bill = service.createBill({name: 'Will Be Deleted', amount_cents: 500, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     const transaction = transactionService.createTransaction({
         date: '2026-01-01', description: 'Test row', amount_cents: -500, category_id: null, bill_id: bill.id,
     });
@@ -65,7 +81,7 @@ test('deleting a bill sets bill_id to null on referencing transactions', async (
 });
 
 test('findBillForDescription matches a case-insensitive substring', () => {
-    service.createBill({name: 'Netflix Sub Test', amount_cents: 1599, due_day: 5, match_pattern: 'NETFLIX SUB TEST'});
+    service.createBill({name: 'Netflix Sub Test', amount_cents: 1599, due_day: 5, match_pattern: 'NETFLIX SUB TEST', deferred_until: null, category_id: null, marked_paid_for: null});
     const billId = service.findBillForDescription('netflix sub test monthly charge');
     const bill = service.getAllBills().find((b) => b.id === billId);
     assert.equal(bill?.name, 'Netflix Sub Test');
@@ -76,13 +92,13 @@ test('findBillForDescription returns null when no pattern matches', () => {
 });
 
 test('findBillForDescription ignores bills with an empty match_pattern', () => {
-    service.createBill({name: 'No Pattern Bill', amount_cents: 500, due_day: 1, match_pattern: ''});
+    service.createBill({name: 'No Pattern Bill', amount_cents: 500, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     assert.equal(service.findBillForDescription('No Pattern Bill'), null);
 });
 
 test('findBillForDescription picks the longest matching pattern', () => {
-    service.createBill({name: 'Generic Pattern Test', amount_cents: 500, due_day: 1, match_pattern: 'Cash App'});
-    service.createBill({name: 'Specific Pattern Test', amount_cents: 500, due_day: 1, match_pattern: 'Cash App Walmart'});
+    service.createBill({name: 'Generic Pattern Test', amount_cents: 500, due_day: 1, match_pattern: 'Cash App', deferred_until: null, category_id: null, marked_paid_for: null});
+    service.createBill({name: 'Specific Pattern Test', amount_cents: 500, due_day: 1, match_pattern: 'Cash App Walmart', deferred_until: null, category_id: null, marked_paid_for: null});
     const billId = service.findBillForDescription('Cash App Walmart Houston TX');
     const bill = service.getAllBills().find((b) => b.id === billId);
     assert.equal(bill?.name, 'Specific Pattern Test');
@@ -90,7 +106,7 @@ test('findBillForDescription picks the longest matching pattern', () => {
 
 test('getUpcomingBills marks an unpaid bill due within 14 days as upcoming', () => {
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: 'Upcoming Test Bill', amount_cents: 1000, due_day: 20, match_pattern: ''});
+    const bill = service.createBill({name: 'Upcoming Test Bill', amount_cents: 1000, due_day: 20, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
 
     const results = service.getUpcomingBills(today);
     const entry = results.find((r) => r.bill.id === bill.id);
@@ -100,7 +116,7 @@ test('getUpcomingBills marks an unpaid bill due within 14 days as upcoming', () 
 
 test('getUpcomingBills marks an unpaid bill past its due date this cycle as overdue', () => {
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: 'Overdue Test Bill', amount_cents: 1000, due_day: 5, match_pattern: ''});
+    const bill = service.createBill({name: 'Overdue Test Bill', amount_cents: 1000, due_day: 5, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
 
     const results = service.getUpcomingBills(today);
     const entry = results.find((r) => r.bill.id === bill.id);
@@ -112,7 +128,7 @@ test('getUpcomingBills marks a bill with a linked transaction this cycle as paid
     const {TransactionService} = await import('./transactions.service.ts');
     const transactionService = new TransactionService();
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: 'Paid Test Bill', amount_cents: 1000, due_day: 10, match_pattern: ''});
+    const bill = service.createBill({name: 'Paid Test Bill', amount_cents: 1000, due_day: 10, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     transactionService.createTransaction({
         date: '2026-06-09', description: 'Paid Test Bill payment', amount_cents: -1000,
         category_id: null, bill_id: bill.id,
@@ -125,8 +141,8 @@ test('getUpcomingBills marks a bill with a linked transaction this cycle as paid
 
 test('getUpcomingBills omits a bill due more than 14 days out', () => {
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: 'Far Future Test Bill', amount_cents: 1000, due_day: 30, match_pattern: ''});
-    service.createBill({name: 'Dummy Spacer Bill For Far Future Test', amount_cents: 1, due_day: 1, match_pattern: ''});
+    const bill = service.createBill({name: 'Far Future Test Bill', amount_cents: 1000, due_day: 30, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
+    service.createBill({name: 'Dummy Spacer Bill For Far Future Test', amount_cents: 1, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
 
     const results = service.getUpcomingBills(today);
     assert.equal(results.some((r) => r.bill.id === bill.id), false);
@@ -134,7 +150,7 @@ test('getUpcomingBills omits a bill due more than 14 days out', () => {
 
 test('getUpcomingBills clamps due_day 31 to the last day of a shorter month', () => {
     const today = new Date('2026-02-20T00:00:00Z');
-    const bill = service.createBill({name: 'Clamp Test Bill', amount_cents: 1000, due_day: 31, match_pattern: ''});
+    const bill = service.createBill({name: 'Clamp Test Bill', amount_cents: 1000, due_day: 31, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
 
     const results = service.getUpcomingBills(today);
     const entry = results.find((r) => r.bill.id === bill.id);
@@ -146,7 +162,7 @@ test('getUpcomingBills includes a bill due exactly 14 days out (inclusive upper 
     // today = 2026-06-15, due_day = 29 => dueDate = 2026-06-29
     // daysUntilDue = (2026-06-29 - 2026-06-15) / (24*60*60*1000) = 14
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: '14-Day Boundary Bill', amount_cents: 1000, due_day: 29, match_pattern: ''});
+    const bill = service.createBill({name: '14-Day Boundary Bill', amount_cents: 1000, due_day: 29, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
 
     const results = service.getUpcomingBills(today);
     const entry = results.find((r) => r.bill.id === bill.id);
@@ -158,7 +174,7 @@ test('getUpcomingBills marks a bill due today as upcoming (not overdue)', () => 
     // today = 2026-06-15, due_day = 15 => dueDate = 2026-06-15
     // daysUntilDue = 0, so status should be 'upcoming' (not 'overdue' which is < 0)
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: 'Due Today Bill', amount_cents: 1000, due_day: 15, match_pattern: ''});
+    const bill = service.createBill({name: 'Due Today Bill', amount_cents: 1000, due_day: 15, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
 
     const results = service.getUpcomingBills(today);
     const entry = results.find((r) => r.bill.id === bill.id);
@@ -173,7 +189,7 @@ test('getUpcomingBills does not count a transaction on the previous cycle due da
     // A transaction dated 2026-05-01 paid the PREVIOUS cycle's bill, not this one, so it
     // must not count as paid for the June cycle even though it is within 14 days of due.
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: 'Two Cycle Window Bug Test', amount_cents: 1000, due_day: 1, match_pattern: ''});
+    const bill = service.createBill({name: 'Two Cycle Window Bug Test', amount_cents: 1000, due_day: 1, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     transactionService.createTransaction({
         date: '2026-05-01', description: 'Payment for previous cycle', amount_cents: -1000,
         category_id: null, bill_id: bill.id,
@@ -191,7 +207,7 @@ test('getUpcomingBills counts a transaction exactly 5 days before the due date a
     // new window start = dueDate - 5 days = 2026-06-05
     // A transaction exactly on the window start should count as paid.
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: 'Payment Window Start Test', amount_cents: 1000, due_day: 10, match_pattern: ''});
+    const bill = service.createBill({name: 'Payment Window Start Test', amount_cents: 1000, due_day: 10, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     transactionService.createTransaction({
         date: '2026-06-05', description: 'Payment 5 days before due date', amount_cents: -1000,
         category_id: null, bill_id: bill.id,
@@ -210,7 +226,7 @@ test('getUpcomingBills does not count a transaction on nextDueDate as paid (wind
     // = 2026-06-30 (exclusive). Transaction on 2026-07-05 falls well after that window
     // end and should NOT count as paid, so status should be 'overdue'.
     const today = new Date('2026-06-15T00:00:00Z');
-    const bill = service.createBill({name: 'Payment Window End Test', amount_cents: 1000, due_day: 5, match_pattern: ''});
+    const bill = service.createBill({name: 'Payment Window End Test', amount_cents: 1000, due_day: 5, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     transactionService.createTransaction({
         date: '2026-07-05', description: 'Payment on next cycle due date', amount_cents: -1000,
         category_id: null, bill_id: bill.id,
@@ -225,7 +241,7 @@ test('getUpcomingBills clamps due_day 31 to Feb 29 in a leap year', () => {
     // 2028 is a leap year, today = 2028-02-20, due_day = 31
     // dueDate should be 2028-02-29 (not 2028-02-28)
     const today = new Date('2028-02-20T00:00:00Z');
-    const bill = service.createBill({name: 'Leap Year Clamp Test', amount_cents: 1000, due_day: 31, match_pattern: ''});
+    const bill = service.createBill({name: 'Leap Year Clamp Test', amount_cents: 1000, due_day: 31, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
 
     const results = service.getUpcomingBills(today);
     const entry = results.find((r) => r.bill.id === bill.id);
@@ -242,7 +258,7 @@ test('getUpcomingBills handles a due date that wraps into January of the followi
     // (windowEnd = nextDueDate - 5 days = 2027-01-26). A transaction dated 2027-01-25
     // falls inside the window [2026-12-26, 2027-01-26) and should count as paid.
     const today = new Date('2026-12-20T00:00:00Z');
-    const bill = service.createBill({name: 'Year End Wrap Test', amount_cents: 1000, due_day: 31, match_pattern: ''});
+    const bill = service.createBill({name: 'Year End Wrap Test', amount_cents: 1000, due_day: 31, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     transactionService.createTransaction({
         date: '2027-01-25', description: 'Payment inside the forward-wrapping window end', amount_cents: -1000,
         category_id: null, bill_id: bill.id,
@@ -258,7 +274,7 @@ test('getUpcomingBills correctly computes a due date of the 31st in January (yea
     // today = 2026-01-20, due_day = 31 => dueDate = 2026-01-31 (11 days out, within the
     // 14-day window so the bill is included).
     const today = new Date('2026-01-20T00:00:00Z');
-    const bill = service.createBill({name: 'Year Start Due Day 31 Test', amount_cents: 1000, due_day: 31, match_pattern: ''});
+    const bill = service.createBill({name: 'Year Start Due Day 31 Test', amount_cents: 1000, due_day: 31, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
 
     const results = service.getUpcomingBills(today);
     const entry = results.find((r) => r.bill.id === bill.id);
@@ -280,7 +296,7 @@ test('getUpcomingBills handles a paid-detection grace window that crosses back i
     // instead exercises the real place a backward year-boundary crossing now happens:
     // the grace window itself.)
     const today = new Date('2026-01-10T00:00:00Z');
-    const bill = service.createBill({name: 'Year Start Wrap Test', amount_cents: 1000, due_day: 3, match_pattern: ''});
+    const bill = service.createBill({name: 'Year Start Wrap Test', amount_cents: 1000, due_day: 3, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null});
     transactionService.createTransaction({
         date: '2025-12-30', description: 'Payment inside the backward-wrapping grace window', amount_cents: -1000,
         category_id: null, bill_id: bill.id,
@@ -355,7 +371,7 @@ test('getSuggestedBills excludes a description already matched by an existing bi
     const transactionService = new TransactionService();
     const description = 'Already A Bill Charge';
 
-    service.createBill({name: 'Already A Bill', amount_cents: 999, due_day: 1, match_pattern: 'Already A Bill Charge'});
+    service.createBill({name: 'Already A Bill', amount_cents: 999, due_day: 1, match_pattern: 'Already A Bill Charge', deferred_until: null, category_id: null, marked_paid_for: null});
 
     transactionService.createTransaction({
         date: '2026-04-01', description, amount_cents: -999, category_id: null, bill_id: null,
@@ -388,4 +404,108 @@ test('getSuggestedBills rejects a group with a single out-of-range gap despite o
 
     const suggestions = service.getSuggestedBills();
     assert.equal(suggestions.some((s) => s.description === description), false);
+});
+
+test('getUpcomingBills returns the deferred_until date instead of the due_day-computed one', () => {
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({
+        name: 'Deferred Date Test Bill', amount_cents: 1000, due_day: 5, match_pattern: '', deferred_until: '2026-06-20', category_id: null, marked_paid_for: null,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.dueDate, '2026-06-20');
+});
+
+test('getUpcomingBills marks a transaction near the deferred_until date as paid, not the original due_day date', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({
+        name: 'Deferred Paid Window Test Bill', amount_cents: 1000, due_day: 5, match_pattern: '', deferred_until: '2026-06-20', category_id: null, marked_paid_for: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-06-18', description: 'Payment near deferred date', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'paid');
+});
+
+test('getUpcomingBills does not count a transaction near the original due_day date as paid while deferred', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({
+        name: 'Deferred Original Window Test Bill', amount_cents: 1000, due_day: 5, match_pattern: '', deferred_until: '2026-06-20', category_id: null, marked_paid_for: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-06-05', description: 'Payment on original due date', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'upcoming');
+});
+
+test('getUpcomingBills falls back to the normal due_day date and clears an expired deferred_until', () => {
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({
+        name: 'Expired Deferral Test Bill', amount_cents: 1000, due_day: 20, match_pattern: '', deferred_until: '2026-06-01', category_id: null, marked_paid_for: null,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.dueDate, '2026-06-20');
+
+    const reloaded = service.getBillById(bill.id);
+    assert.equal(reloaded?.deferred_until, null);
+});
+
+test('getUpcomingBills marks a bill paid when marked_paid_for matches this cycle\'s due date, with no linked transaction', () => {
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({
+        name: 'Manually Paid Test Bill', amount_cents: 1000, due_day: 20, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: '2026-06-20',
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'paid');
+    assert.equal(entry?.markedPaid, true);
+});
+
+test('getUpcomingBills reports markedPaid false for a bill paid via a real transaction', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({
+        name: 'Transaction Paid Test Bill', amount_cents: 1000, due_day: 10, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-06-09', description: 'Transaction Paid Test Bill payment', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'paid');
+    assert.equal(entry?.markedPaid, false);
+});
+
+test('getUpcomingBills falls back to normal detection and clears a stale marked_paid_for from a previous cycle', () => {
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({
+        name: 'Stale Marked Paid Test Bill', amount_cents: 1000, due_day: 5, match_pattern: '', deferred_until: null, category_id: null, marked_paid_for: '2026-05-05',
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'overdue');
+    assert.equal(entry?.markedPaid, false);
+
+    const reloaded = service.getBillById(bill.id);
+    assert.equal(reloaded?.marked_paid_for, null);
 });

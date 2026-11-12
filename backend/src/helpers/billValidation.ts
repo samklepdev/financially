@@ -1,5 +1,8 @@
 import type {BillApiResult} from "../types/billApiResult.ts";
 
+const DATE = /^\d{4}-\d{2}-\d{2}$/;
+const isOptionalId = (v: unknown) => v == null || Number.isInteger(v);
+
 /**
  * @desc Validate a bill object
  * @desc Returns a BillApiResult with either the validated bill or an error message
@@ -33,6 +36,21 @@ export function validateBill(body: unknown): BillApiResult {
         return {ok: false, error: 'match_pattern must be a string'}
     }
 
+    // Return false if deferred_until is not null or a YYYY-MM-DD string
+    if (b.deferred_until !== null && (typeof b.deferred_until !== 'string' || !DATE.test(b.deferred_until))) {
+        return {ok: false, error: 'deferred_until must be null or a YYYY-MM-DD date'}
+    }
+
+    // Return false if category_id is not an integer or null
+    if (!isOptionalId(b.category_id)) {
+        return {ok: false, error: 'category_id must be an integer or null'}
+    }
+
+    // Return false if marked_paid_for is set but not a YYYY-MM-DD string
+    if (b.marked_paid_for != null && (typeof b.marked_paid_for !== 'string' || !DATE.test(b.marked_paid_for))) {
+        return {ok: false, error: 'marked_paid_for must be null or a YYYY-MM-DD date'}
+    }
+
     return {
         ok: true,
         value: {
@@ -40,6 +58,9 @@ export function validateBill(body: unknown): BillApiResult {
             amount_cents: b.amount_cents as number,
             due_day: b.due_day as number,
             match_pattern: b.match_pattern,
+            deferred_until: b.deferred_until as string | null,
+            category_id: (b.category_id ?? null) as number | null,
+            marked_paid_for: (b.marked_paid_for ?? null) as string | null,
         }
     }
 }
