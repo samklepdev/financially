@@ -12,6 +12,7 @@ import IncomeTrendChart from "./dashboard/charts/IncomeTrendChart.tsx";
 import NetCashFlowChart from "./dashboard/charts/NetCashFlowChart.tsx";
 import OutflowsDonut from "./dashboard/charts/OutflowsDonut.tsx";
 import DashboardChat from "./dashboard/DashboardChat.tsx";
+import UpcomingBills from "./dashboard/UpcomingBills.tsx";
 import {
     runningBalanceSeries,
     spendingTrendSeries,
@@ -87,6 +88,7 @@ function App() {
         <div className="dashboard-layout">
             <div className="dashboard-main">
                 <RangeSelect value={range} onChange={setRange}/>
+                <UpcomingBills/>
                 <section className="chart-grid" aria-label="Financial charts">
                     <RunningBalanceChart data={balanceSeries}/>
                     <SpendingTrendChart data={spendSeries}/>
