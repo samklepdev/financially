@@ -292,3 +292,22 @@ test('getSuggestedBills excludes a description already matched by an existing bi
     const suggestions = service.getSuggestedBills();
     assert.equal(suggestions.some((s) => s.description === description), false);
 });
+
+test('getSuggestedBills rejects a group with a single out-of-range gap despite other gaps being valid', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const description = 'Non Uniform Gap Charge';
+
+    transactionService.createTransaction({
+        date: '2026-01-01', description, amount_cents: -1200, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-01-31', description, amount_cents: -1200, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-02-10', description, amount_cents: -1200, category_id: null, bill_id: null,
+    });
+
+    const suggestions = service.getSuggestedBills();
+    assert.equal(suggestions.some((s) => s.description === description), false);
+});
