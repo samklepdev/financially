@@ -1,17 +1,22 @@
 import {useState} from "react";
-import type {Bill} from "../types/bill.ts";
+import type {Bill, UpcomingBill} from "../types/bill.ts";
+import type {Category} from "../types/category.ts";
 
 type Props = {
     bill: Bill;
+    categories: Category[];
+    upcoming?: UpcomingBill;
     onUpdate: (bill: Bill, patch: Partial<Bill>) => Promise<void>;
     onDelete: (id: number) => void;
 };
 
-function BillRow({bill, onUpdate, onDelete}: Props) {
+function BillRow({bill, categories, upcoming, onUpdate, onDelete}: Props) {
     const [draftName, setDraftName] = useState(bill.name);
     const [draftAmount, setDraftAmount] = useState((bill.amount_cents / 100).toFixed(2));
     const [draftDueDay, setDraftDueDay] = useState(String(bill.due_day));
     const [draftPattern, setDraftPattern] = useState(bill.match_pattern);
+    const [showDeferInput, setShowDeferInput] = useState(false);
+    const [deferDraft, setDeferDraft] = useState('');
 
     // Each commit sends a full snapshot of the row's current (validated) draft
     // values, not just the single field that triggered the blur. Rows are edited
@@ -94,40 +99,146 @@ function BillRow({bill, onUpdate, onDelete}: Props) {
         });
     }
 
+    function commitCategory(categoryId: number | null) {
+        onUpdate(bill, {
+            name: draftName,
+            amount_cents: safeAmountCents(),
+            due_day: safeDueDay(),
+            match_pattern: draftPattern,
+            category_id: categoryId,
+        });
+    }
+
+    function togglePaid() {
+        if (!upcoming) {
+            return;
+        }
+        onUpdate(bill, {
+            name: draftName,
+            amount_cents: safeAmountCents(),
+            due_day: safeDueDay(),
+            match_pattern: draftPattern,
+            marked_paid_for: upcoming.markedPaid ? null : upcoming.dueDate,
+        });
+    }
+
+    function confirmDefer() {
+        if (deferDraft === '') {
+            return;
+        }
+        onUpdate(bill, {
+            name: draftName,
+            amount_cents: safeAmountCents(),
+            due_day: safeDueDay(),
+            match_pattern: draftPattern,
+            deferred_until: deferDraft,
+        });
+        setShowDeferInput(false);
+        setDeferDraft('');
+    }
+
+    function clearDefer() {
+        onUpdate(bill, {
+            name: draftName,
+            amount_cents: safeAmountCents(),
+            due_day: safeDueDay(),
+            match_pattern: draftPattern,
+            deferred_until: null,
+        });
+    }
+
     return (
         <article className="ledger-row bill-row">
-            <input
-                type="text"
-                className="bill-name-input"
-                value={draftName}
-                onChange={(e) => setDraftName(e.target.value)}
-                onBlur={commitName}
-            />
-            <input
-                type="number"
-                step="0.01"
-                min="0.01"
-                className="bill-amount-input"
-                value={draftAmount}
-                onChange={(e) => setDraftAmount(e.target.value)}
-                onBlur={commitAmount}
-            />
-            <input
-                type="number"
-                min="1"
-                max="31"
-                className="bill-due-day-input"
-                value={draftDueDay}
-                onChange={(e) => setDraftDueDay(e.target.value)}
-                onBlur={commitDueDay}
-            />
-            <input
-                type="text"
-                className="bill-pattern-input"
-                value={draftPattern}
-                onChange={(e) => setDraftPattern(e.target.value)}
-                onBlur={commitPattern}
-            />
+            <label className="bill-field bill-field--grow">
+                <span className="bill-field__label">Name</span>
+                <input
+                    type="text"
+                    value={draftName}
+                    onChange={(e) => setDraftName(e.target.value)}
+                    onBlur={commitName}
+                />
+            </label>
+            <label className="bill-field">
+                <span className="bill-field__label">Amount</span>
+                <input
+                    type="number"
+                    step="0.01"
+                    min="0.01"
+                    className="bill-amount-input"
+                    value={draftAmount}
+                    onChange={(e) => setDraftAmount(e.target.value)}
+                    onBlur={commitAmount}
+                />
+            </label>
+            <label className="bill-field">
+                <span className="bill-field__label">Due day</span>
+                <input
+                    type="number"
+                    min="1"
+                    max="31"
+                    className="bill-due-day-input"
+                    value={draftDueDay}
+                    onChange={(e) => setDraftDueDay(e.target.value)}
+                    onBlur={commitDueDay}
+                />
+            </label>
+            <label className="bill-field bill-field--grow">
+                <span className="bill-field__label">Match pattern</span>
+                <input
+                    type="text"
+                    value={draftPattern}
+                    onChange={(e) => setDraftPattern(e.target.value)}
+                    onBlur={commitPattern}
+                />
+            </label>
+            <label className="bill-field">
+                <span className="bill-field__label">Category</span>
+                <select
+                    className="ledger-category-select"
+                    value={bill.category_id ?? ''}
+                    onChange={(e) => commitCategory(e.target.value === '' ? null : Number(e.target.value))}
+                >
+                    <option value="">Uncategorized</option>
+                    {categories.map((c) => (
+                        <option key={c.id} value={c.id}>{c.name}</option>
+                    ))}
+                </select>
+            </label>
+            {upcoming && (
+                upcoming.status === 'paid' && !upcoming.markedPaid ? (
+                    <span className="bill-paid bill-paid--auto">Paid</span>
+                ) : (
+                    <span className="bill-paid">
+                        <span className={`bill-paid__label ${upcoming.markedPaid ? 'bill-paid__label--marked' : ''}`}>
+                            {upcoming.markedPaid ? 'Marked paid' : upcoming.status === 'overdue' ? 'Overdue' : 'Due soon'}
+                        </span>
+                        <button type="button" onClick={togglePaid}>
+                            {upcoming.markedPaid ? 'Mark unpaid' : 'Mark paid'}
+                        </button>
+                    </span>
+                )
+            )}
+            {bill.deferred_until === null ? (
+                showDeferInput ? (
+                    <span className="bill-defer">
+                        <input
+                            type="date"
+                            className="bill-defer-input"
+                            value={deferDraft}
+                            onChange={(e) => setDeferDraft(e.target.value)}
+                        />
+                        <button type="button" onClick={confirmDefer}>Confirm</button>
+                        <button type="button" onClick={() => {setShowDeferInput(false); setDeferDraft('');}}>Cancel</button>
+                    </span>
+                ) : (
+                    <button type="button" onClick={() => setShowDeferInput(true)}>Defer</button>
+                )
+            ) : (
+                <span className="bill-defer">
+                    <span className="bill-defer__label">Deferred to {bill.deferred_until}</span>
+                    <button type="button" onClick={clearDefer}>Clear</button>
+                </span>
+            )}
             <button type="button" onClick={() => onDelete(bill.id)}>Delete</button>
         </article>
     );
