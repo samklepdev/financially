@@ -101,39 +101,43 @@ function Categories() {
                 <p className="ledger-status">No categories yet.</p>
             )}
 
-            {!loading && !error && (categories ?? []).map((category) => (
-                <article className="ledger-row category-row" key={category.id}>
-                    {editingId === category.id ? (
-                        <>
-                            <input
-                                type="color"
-                                value={editColor}
-                                onChange={(e) => setEditColor(e.target.value)}
-                                aria-label={`Edit color for ${category.name}`}
-                            />
-                            <input
-                                type="text"
-                                value={editName}
-                                onChange={(e) => setEditName(e.target.value)}
-                                aria-label={`Edit name for ${category.name}`}
-                            />
-                            <div className="category-row__actions">
-                                <button type="button" onClick={() => handleSaveEdit(category.id)}>Save</button>
-                                <button type="button" onClick={() => setEditingId(null)}>Cancel</button>
-                            </div>
-                        </>
-                    ) : (
-                        <>
-                            <span className="category-swatch" style={{backgroundColor: category.color}}/>
-                            <span className="category-name">{category.name}</span>
-                            <div className="category-row__actions">
-                                <button type="button" onClick={() => startEdit(category)}>Edit</button>
-                                <button type="button" onClick={() => handleDelete(category.id)}>Delete</button>
-                            </div>
-                        </>
-                    )}
-                </article>
-            ))}
+            {!loading && !error && (categories ?? []).length > 0 && (
+                <div className="ledger">
+                    {(categories ?? []).map((category) => (
+                        <article className="ledger-row category-row" key={category.id}>
+                            {editingId === category.id ? (
+                                <>
+                                    <input
+                                        type="color"
+                                        value={editColor}
+                                        onChange={(e) => setEditColor(e.target.value)}
+                                        aria-label={`Edit color for ${category.name}`}
+                                    />
+                                    <input
+                                        type="text"
+                                        value={editName}
+                                        onChange={(e) => setEditName(e.target.value)}
+                                        aria-label={`Edit name for ${category.name}`}
+                                    />
+                                    <div className="category-row__actions">
+                                        <button type="button" onClick={() => handleSaveEdit(category.id)}>Save</button>
+                                        <button type="button" onClick={() => setEditingId(null)}>Cancel</button>
+                                    </div>
+                                </>
+                            ) : (
+                                <>
+                                    <span className="category-swatch" style={{backgroundColor: category.color}}/>
+                                    <span className="category-name">{category.name}</span>
+                                    <div className="category-row__actions">
+                                        <button type="button" onClick={() => startEdit(category)}>Edit</button>
+                                        <button type="button" onClick={() => handleDelete(category.id)}>Delete</button>
+                                    </div>
+                                </>
+                            )}
+                        </article>
+                    ))}
+                </div>
+            )}
         </>
     )
 }

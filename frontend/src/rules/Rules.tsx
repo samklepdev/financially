@@ -103,21 +103,25 @@ function Rules() {
                 <p className="ledger-status">No rules yet.</p>
             )}
 
-            {!loading && !error && (rules ?? []).map((rule) => (
-                <article className="ledger-row rule-row" key={rule.id}>
-                    <span className="rule-pattern">{rule.pattern}</span>
-                    <select
-                        className="rule-category-select"
-                        value={rule.category_id}
-                        onChange={(e) => handleCategoryChange(rule, e.target.value)}
-                    >
-                        {categories.map((c) => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                        ))}
-                    </select>
-                    <button type="button" onClick={() => handleDelete(rule.id)}>Delete</button>
-                </article>
-            ))}
+            {!loading && !error && (rules ?? []).length > 0 && (
+                <div className="ledger">
+                    {(rules ?? []).map((rule) => (
+                        <article className="ledger-row rule-row" key={rule.id}>
+                            <span className="rule-pattern">{rule.pattern}</span>
+                            <select
+                                className="rule-category-select"
+                                value={rule.category_id}
+                                onChange={(e) => handleCategoryChange(rule, e.target.value)}
+                            >
+                                {categories.map((c) => (
+                                    <option key={c.id} value={c.id}>{c.name}</option>
+                                ))}
+                            </select>
+                            <button type="button" onClick={() => handleDelete(rule.id)}>Delete</button>
+                        </article>
+                    ))}
+                </div>
+            )}
         </>
     )
 }
