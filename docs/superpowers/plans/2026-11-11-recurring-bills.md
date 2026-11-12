@@ -689,7 +689,7 @@ Then add this method inside the `BillService` class, after `getUpcomingBills`:
 
         const groups = new Map<string, {description: string, amount_cents: number, dates: string[]}>();
         for (const row of rows) {
-            const key = `${row.description} ${row.amount_cents}`;
+            const key = `${row.description} ${row.amount_cents}`;
             const group = groups.get(key);
             if (group) {
                 group.dates.push(row.date);
@@ -1470,7 +1470,7 @@ function Bills() {
     }
 
     function dismissSuggestion(suggestion: SuggestedBill) {
-        setDismissed((prev) => new Set(prev).add(`${suggestion.description} ${suggestion.amount_cents}`));
+        setDismissed((prev) => new Set(prev).add(`${suggestion.description} ${suggestion.amount_cents}`));
     }
 
     async function handleAdd() {
@@ -1524,7 +1524,7 @@ function Bills() {
     }
 
     const visibleSuggestions = suggestions.filter(
-        (s) => !dismissed.has(`${s.description} ${s.amount_cents}`)
+        (s) => !dismissed.has(`${s.description} ${s.amount_cents}`)
     );
 
     return (
@@ -1619,7 +1619,7 @@ function Bills() {
                     {visibleSuggestions.map((suggestion) => (
                         <article
                             className="ledger-row bill-suggestion-row"
-                            key={`${suggestion.description} ${suggestion.amount_cents}`}
+                            key={`${suggestion.description} ${suggestion.amount_cents}`}
                         >
                             <span className="bill-suggestion-description">{suggestion.description}</span>
                             <span className="bill-suggestion-amount">{formatMoney(suggestion.amount_cents)}</span>
