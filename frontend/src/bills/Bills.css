@@ -1,0 +1,121 @@
+.bill-add {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.bill-add input {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--text-on-ink-strong);
+  background: var(--ink-raised);
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 4px;
+  padding: 0.5rem 0.7rem;
+}
+
+.bill-add input[type="text"]:first-child {
+  flex: 1;
+  min-width: 10rem;
+}
+
+.bill-add button {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-ink-strong);
+  background: none;
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 4px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.bill-add button:hover {
+  border-color: var(--text-on-ink);
+}
+
+.bill-add button:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.bill-row {
+  gap: 0.6rem;
+}
+
+.bill-row input {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-paper);
+  background: var(--paper-dim);
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+}
+
+.bill-name-input {
+  flex: 1;
+}
+
+.bill-amount-input {
+  width: 6rem;
+}
+
+.bill-due-day-input {
+  width: 4.5rem;
+}
+
+.bill-pattern-input {
+  flex: 1;
+}
+
+.bill-row button {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-paper);
+  background: none;
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+.bill-suggestions {
+  margin-top: 2rem;
+}
+
+.bill-suggestions__title {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-on-paper);
+  margin-bottom: 0.75rem;
+}
+
+.bill-suggestion-row {
+  gap: 0.75rem;
+}
+
+.bill-suggestion-description {
+  flex: 1;
+}
+
+.bill-suggestion-row button {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  background: none;
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .bill-add {
+    flex-wrap: wrap;
+  }
+}
