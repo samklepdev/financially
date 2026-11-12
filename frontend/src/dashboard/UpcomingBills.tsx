@@ -29,23 +29,59 @@ function UpcomingBills() {
         });
     }, []);
 
-    const unpaid = (upcoming ?? []).filter((u) => u.status !== 'paid');
+    async function togglePaid(u: UpcomingBill) {
+        setError(null);
+        const marked_paid_for = u.markedPaid ? null : u.dueDate;
+        try {
+            await billApiService.updateBill(u.bill.id, {
+                name: u.bill.name,
+                amount_cents: u.bill.amount_cents,
+                due_day: u.bill.due_day,
+                match_pattern: u.bill.match_pattern,
+                deferred_until: u.bill.deferred_until,
+                category_id: u.bill.category_id,
+                marked_paid_for,
+            });
+            // Re-fetch rather than patching status/markedPaid locally: un-marking
+            // doesn't tell us what the real status reverts to (overdue vs
+            // upcoming, or paid-via-transaction) without redoing the same
+            // cycle/transaction-window math the backend already owns.
+            setUpcoming(await billApiService.getUpcomingBills());
+        } catch (err) {
+            setError(err instanceof Error ? err.message : 'Could not update this bill');
+        }
+    }
+
+    // Auto-detected paid bills (a linked transaction already accounts for
+    // them) stay hidden, same as before. A manually marked-paid bill stays
+    // visible — dimmed, with an undo — since there's no transaction backing
+    // it up; hiding it would leave no way to notice and correct a mistake.
+    const visible = (upcoming ?? []).filter((u) => u.status !== 'paid' || u.markedPaid);
 
     return (
         <article className="chart-card upcoming-bills-card" aria-label="Upcoming bills">
             <h3 className="chart-card__title">Upcoming Bills</h3>
             {error && <p className="ledger-status error">{error}</p>}
-            {!error && upcoming !== undefined && unpaid.length === 0 && (
+            {!error && upcoming !== undefined && visible.length === 0 && (
                 <p className="upcoming-bills-empty">Nothing due soon.</p>
             )}
-            {!error && unpaid.map((u) => (
+            {!error && visible.map((u) => (
                 <div
                     key={u.bill.id}
-                    className={`upcoming-bill-row ${u.status === 'overdue' ? 'upcoming-bill-row--overdue' : ''}`}
+                    className={[
+                        'upcoming-bill-row',
+                        u.status === 'overdue' ? 'upcoming-bill-row--overdue' : '',
+                        u.markedPaid ? 'upcoming-bill-row--paid' : '',
+                    ].filter(Boolean).join(' ')}
                 >
                     <span className="upcoming-bill-name">{u.bill.name}</span>
                     <span className="upcoming-bill-amount">{formatMoney(u.bill.amount_cents)}</span>
-                    <span className="upcoming-bill-due">{dueDateLabel(u, today)}</span>
+                    <span className="upcoming-bill-due">
+                        {u.markedPaid ? 'Marked paid' : dueDateLabel(u, today)}
+                    </span>
+                    <button type="button" className="upcoming-bill-toggle" onClick={() => togglePaid(u)}>
+                        {u.markedPaid ? 'Mark unpaid' : 'Mark paid'}
+                    </button>
                 </div>
             ))}
         </article>

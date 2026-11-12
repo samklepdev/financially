@@ -40,3 +40,35 @@
 .upcoming-bill-row--overdue .upcoming-bill-due {
   color: var(--debit);
 }
+
+.upcoming-bill-row--paid {
+  opacity: 0.55;
+}
+
+.upcoming-bill-row--paid .upcoming-bill-name {
+  text-decoration: line-through;
+}
+
+.upcoming-bill-row--paid .upcoming-bill-due {
+  color: var(--credit);
+}
+
+.upcoming-bill-toggle {
+  font-family: var(--mono);
+  font-size: 0.68rem;
+  letter-spacing: 0.04em;
+  color: var(--text-on-ink);
+  background: none;
+  border: 1px solid var(--rule-on-ink);
+  border-radius: 999px;
+  padding: 0.2rem 0.6rem;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: color 0.15s ease, border-color 0.15s ease;
+}
+
+.upcoming-bill-toggle:hover,
+.upcoming-bill-toggle:focus-visible {
+  color: var(--text-on-ink-strong);
+  border-color: var(--text-on-ink);
+}
