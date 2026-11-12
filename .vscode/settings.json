@@ -1,0 +1,36 @@
+{
+  "editor.formatOnSave": true,
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": "explicit"
+  },
+  "editor.defaultFormatter": "esbenp.prettier-vscode",
+  "typescript.updateImportsOnFileMove.enabled": "always",
+  "typescript.preferences.importModuleSpecifier": "relative",
+  "editor.suggestSelection": "first",
+  "explorer.compactFolders": false,
+  "files.exclude": {
+    "**/.git": true,
+    "**/node_modules": false
+  },
+  "search.exclude": {
+    "**/node_modules": true,
+    "**/dist": true,
+    "**/build": true
+  },
+  "editor.rulers": [100],
+  "editor.minimap.enabled": false,
+  "sqltools.connections": [
+    {
+      "name": "financially.db",
+      "driver": "SQLite",
+      "database": "${workspaceFolder}/backend/financially.db"
+    }
+  ],
+  "sqltools.useNodeRuntime": true,
+  "workbench.iconTheme": "material-icon-theme",
+  "npm.enableScriptExplorer": true,
+  "editor.linkedEditing": true,
+  "javascript.updateImportsOnFileMove.enabled": "always",
+  "todo-tree.general.tags": ["TODO", "FIXME", "HACK", "XXX"],
+  "errorLens.enabledDiagnosticLevels": ["error", "warning"]
+}
