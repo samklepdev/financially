@@ -15,6 +15,7 @@ function NetCashFlowChart({data}: Props) {
                     <Tooltip
                         formatter={(value) => formatMoney(Number(value))}
                         contentStyle={{background: 'var(--ink-raised)', border: '1px solid var(--rule-on-ink)', borderRadius: 6}}
+                        cursor={{fill: 'var(--rule-on-ink)', opacity: 0.2}}
                     />
                     <Bar dataKey="netCents" name="Net">
                         {data.map((d) => (
