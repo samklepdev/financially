@@ -120,3 +120,36 @@ test('creates a new category and a matching rule when a row proposes newCategory
         await close();
     }
 });
+
+test('previewCsvImport auto-links a candidate to a bill by match_pattern', async () => {
+    const {url, close} = await listen(app);
+    try {
+        const cookie = await loginCookie(url);
+
+        await fetch(`${url}/api/v1/bills`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', Cookie: cookie},
+            body: JSON.stringify({
+                name: 'CSV Import Bill Test', amount_cents: 1200, due_day: 1, match_pattern: 'CSV Import Bill Test',
+            }),
+        });
+
+        const csv = 'Date,Description,Amount\n2026-06-01,CSV Import Bill Test Charge,-12.00\n';
+        const form = new FormData();
+        form.append('file', new Blob([csv], {type: 'text/csv'}), 'statement.csv');
+        form.append('dateColumn', 'Date');
+        form.append('descriptionColumn', 'Description');
+        form.append('amountColumn', 'Amount');
+
+        const res = await fetch(`${url}/api/v1/transactions/import/csv/preview`, {
+            method: 'POST',
+            headers: {Cookie: cookie},
+            body: form,
+        });
+        assert.equal(res.status, 200);
+        const body = await res.json();
+        assert.notEqual(body.data.transactions[0].bill_id, null);
+    } finally {
+        await close();
+    }
+});

@@ -9,9 +9,11 @@ import {suggestCategories} from '../services/ollamaCategorySuggester.service.ts'
 import {resolveNewCategories} from '../services/importCategoryResolver.service.ts';
 import type {ImportConfirmItem} from '../services/importCategoryResolver.service.ts';
 import type {ImportCandidate, NewTransaction} from '../types/transaction.ts';
+import {BillService} from '../services/bill.service.ts';
 
 const transactionService = new TransactionService();
 const categoryRuleService = new CategoryRuleService();
+const billService = new BillService();
 
 /**
  * Enriches parsed transactions with a suggested category (exact-history
@@ -24,6 +26,7 @@ async function buildImportCandidates(transactions: NewTransaction[]): Promise<Im
         ...t,
         category_id: transactionService.findRecentCategoryForDescription(t.description)
             ?? categoryRuleService.findCategoryForDescription(t.description),
+        bill_id: billService.findBillForDescription(t.description),
         isDuplicate: transactionService.existsSimilar(t.date, t.description, t.amount_cents),
     }));
 
