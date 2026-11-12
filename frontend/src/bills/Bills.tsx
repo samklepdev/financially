@@ -17,6 +17,7 @@ function Bills() {
     const [newAmount, setNewAmount] = useState('');
     const [newDueDay, setNewDueDay] = useState('1');
     const [newPattern, setNewPattern] = useState('');
+    const [prefilledFromSuggestion, setPrefilledFromSuggestion] = useState(false);
 
     useEffect(() => {
         Promise.all([
@@ -37,6 +38,7 @@ function Bills() {
         setNewAmount((Math.abs(suggestion.amount_cents) / 100).toFixed(2));
         setNewDueDay(String(suggestion.suggested_due_day));
         setNewPattern(suggestion.description);
+        setPrefilledFromSuggestion(true);
     }
 
     function dismissSuggestion(suggestion: SuggestedBill) {
@@ -63,6 +65,7 @@ function Bills() {
             setNewAmount('');
             setNewDueDay('1');
             setNewPattern('');
+            setPrefilledFromSuggestion(false);
         } catch (err) {
             setError(err instanceof Error ? err.message : 'Could not create this bill');
         }
@@ -104,7 +107,12 @@ function Bills() {
                     type="text"
                     placeholder="Name (e.g. Netflix)"
                     value={newName}
-                    onChange={(e) => setNewName(e.target.value)}
+                    onChange={(e) => {
+                        setNewName(e.target.value);
+                        if (e.target.value.trim() === '') {
+                            setPrefilledFromSuggestion(false);
+                        }
+                    }}
                 />
                 <input
                     type="number"
@@ -132,6 +140,13 @@ function Bills() {
                     Add bill
                 </button>
             </div>
+
+            {prefilledFromSuggestion && (
+                <p className="ledger-status bill-suggestion-hint">
+                    This bill won't show as paid until you link its past transactions. Edit them on
+                    the Transactions page and pick this bill from the dropdown.
+                </p>
+            )}
 
             {loading && <p className="ledger-status">Loading bills…</p>}
             {error && <p className="ledger-status error">{error}</p>}
