@@ -141,3 +141,75 @@ test('getUpcomingBills clamps due_day 31 to the last day of a shorter month', ()
     assert.equal(entry?.dueDate, '2026-02-28');
     assert.equal(entry?.status, 'upcoming');
 });
+
+test('getUpcomingBills includes a bill due exactly 14 days out (inclusive upper boundary)', () => {
+    // today = 2026-06-15, due_day = 29 => dueDate = 2026-06-29
+    // daysUntilDue = (2026-06-29 - 2026-06-15) / (24*60*60*1000) = 14
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: '14-Day Boundary Bill', amount_cents: 1000, due_day: 29, match_pattern: ''});
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'upcoming');
+    assert.equal(entry?.dueDate, '2026-06-29');
+});
+
+test('getUpcomingBills marks a bill due today as upcoming (not overdue)', () => {
+    // today = 2026-06-15, due_day = 15 => dueDate = 2026-06-15
+    // daysUntilDue = 0, so status should be 'upcoming' (not 'overdue' which is < 0)
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: 'Due Today Bill', amount_cents: 1000, due_day: 15, match_pattern: ''});
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'upcoming');
+    assert.equal(entry?.dueDate, '2026-06-15');
+});
+
+test('getUpcomingBills counts a transaction on prevDueDate as paid (window start is inclusive)', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    // today = 2026-06-15, due_day = 10 => dueDate = 2026-06-10
+    // prevDueDate = 2026-05-10 (previous month)
+    // Transaction on 2026-05-10 should count as paid
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: 'Payment Window Start Test', amount_cents: 1000, due_day: 10, match_pattern: ''});
+    transactionService.createTransaction({
+        date: '2026-05-10', description: 'Payment on prev cycle due date', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'paid');
+});
+
+test('getUpcomingBills does not count a transaction on nextDueDate as paid (window end is exclusive)', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    // today = 2026-06-15, due_day = 5 => dueDate = 2026-06-05 (overdue)
+    // nextDueDate = 2026-07-05 (next month)
+    // Transaction on 2026-07-05 should NOT count as paid, so status should be 'overdue'
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: 'Payment Window End Test', amount_cents: 1000, due_day: 5, match_pattern: ''});
+    transactionService.createTransaction({
+        date: '2026-07-05', description: 'Payment on next cycle due date', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'overdue');
+});
+
+test('getUpcomingBills clamps due_day 31 to Feb 29 in a leap year', () => {
+    // 2028 is a leap year, today = 2028-02-20, due_day = 31
+    // dueDate should be 2028-02-29 (not 2028-02-28)
+    const today = new Date('2028-02-20T00:00:00Z');
+    const bill = service.createBill({name: 'Leap Year Clamp Test', amount_cents: 1000, due_day: 31, match_pattern: ''});
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.dueDate, '2028-02-29');
+    assert.equal(entry?.status, 'upcoming');
+});
