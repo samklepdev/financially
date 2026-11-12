@@ -20,6 +20,13 @@ export type UpcomingBill = {
     status: 'paid' | 'overdue' | 'upcoming';
 };
 
+export type SuggestedBill = {
+    description: string;
+    amount_cents: number;
+    suggested_due_day: number;
+    occurrences: number;
+};
+
 export class BillService {
     /**
      * Retrieves all bills from the database, ordered alphabetically by name.
@@ -130,5 +137,64 @@ export class BillService {
         }
 
         return result.sort((a, b) => a.dueDate.localeCompare(b.dueDate));
+    }
+
+    /**
+     * Groups transactions with no linked bill by exact (description,
+     * amount_cents), and suggests any group with 3 or more occurrences
+     * whose consecutive dates are each 28-33 days apart (tolerates
+     * weekend/month-length drift without catching unrelated repeat
+     * purchases). Excludes any description already matched by an existing
+     * bill's match_pattern.
+     *
+     * @return Candidate recurring bills, in no particular order.
+     */
+    getSuggestedBills(): SuggestedBill[] {
+        const rows = db.prepare(
+            `SELECT description, amount_cents, date FROM transactions
+             WHERE bill_id IS NULL ORDER BY description, amount_cents, date`
+        ).all() as {description: string, amount_cents: number, date: string}[];
+
+        const groups = new Map<string, {description: string, amount_cents: number, dates: string[]}>();
+        for (const row of rows) {
+            const key = `${row.description}|${row.amount_cents}`;
+            const group = groups.get(key);
+            if (group) {
+                group.dates.push(row.date);
+            } else {
+                groups.set(key, {description: row.description, amount_cents: row.amount_cents, dates: [row.date]});
+            }
+        }
+
+        const suggestions: SuggestedBill[] = [];
+        for (const group of groups.values()) {
+            if (group.dates.length < 3) {
+                continue;
+            }
+            if (this.findBillForDescription(group.description) !== null) {
+                continue;
+            }
+
+            const sortedDates = [...group.dates].sort();
+            const isMonthly = sortedDates.slice(1).every((date, i) => {
+                const prev = new Date(`${sortedDates[i]}T00:00:00Z`).getTime();
+                const curr = new Date(`${date}T00:00:00Z`).getTime();
+                const gapDays = Math.round((curr - prev) / (24 * 60 * 60 * 1000));
+                return gapDays >= 28 && gapDays <= 33;
+            });
+            if (!isMonthly) {
+                continue;
+            }
+
+            const mostRecentDate = sortedDates[sortedDates.length - 1];
+            suggestions.push({
+                description: group.description,
+                amount_cents: group.amount_cents,
+                suggested_due_day: Number(mostRecentDate.slice(8, 10)),
+                occurrences: sortedDates.length,
+            });
+        }
+
+        return suggestions;
     }
 }

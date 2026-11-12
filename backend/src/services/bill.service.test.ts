@@ -213,3 +213,82 @@ test('getUpcomingBills clamps due_day 31 to Feb 29 in a leap year', () => {
     assert.equal(entry?.dueDate, '2028-02-29');
     assert.equal(entry?.status, 'upcoming');
 });
+
+test('getSuggestedBills suggests a description seen 3+ times about a month apart', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const description = 'Suggest Me Monthly Charge';
+
+    transactionService.createTransaction({
+        date: '2026-04-01', description, amount_cents: -1500, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-05-01', description, amount_cents: -1500, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-06-02', description, amount_cents: -1500, category_id: null, bill_id: null,
+    });
+
+    const suggestions = service.getSuggestedBills();
+    const suggestion = suggestions.find((s) => s.description === description);
+    assert.ok(suggestion);
+    assert.equal(suggestion?.amount_cents, -1500);
+    assert.equal(suggestion?.occurrences, 3);
+    assert.equal(suggestion?.suggested_due_day, 2);
+});
+
+test('getSuggestedBills does not suggest only 2 occurrences', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const description = 'Only Twice Charge';
+
+    transactionService.createTransaction({
+        date: '2026-04-01', description, amount_cents: -2000, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-05-01', description, amount_cents: -2000, category_id: null, bill_id: null,
+    });
+
+    const suggestions = service.getSuggestedBills();
+    assert.equal(suggestions.some((s) => s.description === description), false);
+});
+
+test('getSuggestedBills does not suggest occurrences spaced too close together', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const description = 'Frequent Coffee Purchase';
+
+    transactionService.createTransaction({
+        date: '2026-04-01', description, amount_cents: -500, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-04-08', description, amount_cents: -500, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-04-15', description, amount_cents: -500, category_id: null, bill_id: null,
+    });
+
+    const suggestions = service.getSuggestedBills();
+    assert.equal(suggestions.some((s) => s.description === description), false);
+});
+
+test('getSuggestedBills excludes a description already matched by an existing bill', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const description = 'Already A Bill Charge';
+
+    service.createBill({name: 'Already A Bill', amount_cents: 999, due_day: 1, match_pattern: 'Already A Bill Charge'});
+
+    transactionService.createTransaction({
+        date: '2026-04-01', description, amount_cents: -999, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-05-01', description, amount_cents: -999, category_id: null, bill_id: null,
+    });
+    transactionService.createTransaction({
+        date: '2026-06-01', description, amount_cents: -999, category_id: null, bill_id: null,
+    });
+
+    const suggestions = service.getSuggestedBills();
+    assert.equal(suggestions.some((s) => s.description === description), false);
+});
