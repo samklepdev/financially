@@ -52,3 +52,8 @@ if (!categoryColumns.some((c) => c.name === 'color')) {
     db.exec(`ALTER TABLE categories ADD COLUMN color TEXT NOT NULL DEFAULT '#6b9478'`);
 }
 
+const billColumns = db.prepare("SELECT name FROM pragma_table_info('bills')").all() as {name: string}[];
+if (!billColumns.some((c) => c.name === 'match_pattern')) {
+    db.exec(`ALTER TABLE bills ADD COLUMN match_pattern TEXT NOT NULL DEFAULT ''`);
+}
+
