@@ -26,6 +26,10 @@
   animation: rise 0.25s ease both;
 }
 
+.ledger-row--clickable {
+  cursor: pointer;
+}
+
 @keyframes rise {
   from {
     opacity: 0;

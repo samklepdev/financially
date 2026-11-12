@@ -1,0 +1,74 @@
+.add-transaction-form {
+  flex-direction: column;
+  align-items: stretch;
+  gap: 0.75rem;
+}
+
+.add-transaction-fields {
+  grid-template-columns: 6.5rem 1fr auto auto;
+  align-items: center;
+}
+
+.add-transaction-date,
+.add-transaction-description,
+.add-transaction-amount-input {
+  font-family: var(--sans);
+  font-size: 0.9rem;
+  color: var(--text-on-paper);
+  background: var(--paper);
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+}
+
+.add-transaction-amount {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+}
+
+.add-transaction-amount-input {
+  width: 6rem;
+}
+
+.add-transaction-submit,
+.add-transaction-cancel {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+
+.add-transaction-submit {
+  background: var(--credit-dim);
+  color: var(--text-on-ink-strong);
+}
+
+.add-transaction-submit:disabled,
+.add-transaction-cancel:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.add-transaction-cancel {
+  background: none;
+  color: var(--text-on-paper-dim);
+  border: 1px solid var(--rule-on-paper);
+}
+
+.add-transaction-error {
+  padding: 0;
+}
+
+.transaction-delete-button {
+  color: var(--debit-dim);
+  border-color: var(--debit-dim);
+}
+
+.transaction-delete-button--confirming {
+  background: var(--debit-dim);
+  color: var(--text-on-ink-strong);
+}

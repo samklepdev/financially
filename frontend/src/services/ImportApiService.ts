@@ -1,6 +1,6 @@
 import axios, {type AxiosInstance} from "axios";
 import type {ApiErrorBody, ApiResponse} from "../types/api.ts";
-import type {ImportCandidate, ImportConfirmItem} from "../types/transaction.ts";
+import type {CsvRowError, ImportCandidate, ImportConfirmItem} from "../types/transaction.ts";
 
 export class ImportApiService {
     private readonly http: AxiosInstance = axios.create({
@@ -21,6 +21,33 @@ export class ImportApiService {
                 '/transactions/import/preview', formData
             );
             return res.data.data.transactions;
+        } catch (error) {
+            if (axios.isAxiosError<ApiErrorBody>(error)) {
+                throw new Error(error.response?.data?.error ?? error.message, {cause: error});
+            }
+            throw error;
+        }
+    }
+
+    /**
+     * Uploads a CSV file plus a column mapping and returns the parsed
+     * candidate transactions, along with any rows that failed to parse.
+     * Writes nothing to the database.
+     */
+    async previewCsvImport(
+        file: File, mapping: {dateColumn: string, descriptionColumn: string, amountColumn: string}
+    ): Promise<{transactions: ImportCandidate[], errors: CsvRowError[]}> {
+        const formData = new FormData();
+        formData.append('file', file);
+        formData.append('dateColumn', mapping.dateColumn);
+        formData.append('descriptionColumn', mapping.descriptionColumn);
+        formData.append('amountColumn', mapping.amountColumn);
+
+        try {
+            const res = await this.http.post<ApiResponse<{transactions: ImportCandidate[], errors: CsvRowError[]}>>(
+                '/transactions/import/csv/preview', formData
+            );
+            return res.data.data;
         } catch (error) {
             if (axios.isAxiosError<ApiErrorBody>(error)) {
                 throw new Error(error.response?.data?.error ?? error.message, {cause: error});
