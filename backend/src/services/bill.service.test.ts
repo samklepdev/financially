@@ -87,3 +87,57 @@ test('findBillForDescription picks the longest matching pattern', () => {
     const bill = service.getAllBills().find((b) => b.id === billId);
     assert.equal(bill?.name, 'Specific Pattern Test');
 });
+
+test('getUpcomingBills marks an unpaid bill due within 14 days as upcoming', () => {
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: 'Upcoming Test Bill', amount_cents: 1000, due_day: 20, match_pattern: ''});
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'upcoming');
+    assert.equal(entry?.dueDate, '2026-06-20');
+});
+
+test('getUpcomingBills marks an unpaid bill past its due date this cycle as overdue', () => {
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: 'Overdue Test Bill', amount_cents: 1000, due_day: 5, match_pattern: ''});
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'overdue');
+    assert.equal(entry?.dueDate, '2026-06-05');
+});
+
+test('getUpcomingBills marks a bill with a linked transaction this cycle as paid', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: 'Paid Test Bill', amount_cents: 1000, due_day: 10, match_pattern: ''});
+    transactionService.createTransaction({
+        date: '2026-06-09', description: 'Paid Test Bill payment', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'paid');
+});
+
+test('getUpcomingBills omits a bill due more than 14 days out', () => {
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: 'Far Future Test Bill', amount_cents: 1000, due_day: 30, match_pattern: ''});
+    service.createBill({name: 'Dummy Spacer Bill For Far Future Test', amount_cents: 1, due_day: 1, match_pattern: ''});
+
+    const results = service.getUpcomingBills(today);
+    assert.equal(results.some((r) => r.bill.id === bill.id), false);
+});
+
+test('getUpcomingBills clamps due_day 31 to the last day of a shorter month', () => {
+    const today = new Date('2026-02-20T00:00:00Z');
+    const bill = service.createBill({name: 'Clamp Test Bill', amount_cents: 1000, due_day: 31, match_pattern: ''});
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.dueDate, '2026-02-28');
+    assert.equal(entry?.status, 'upcoming');
+});
