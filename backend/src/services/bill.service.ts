@@ -104,20 +104,24 @@ export class BillService {
      * A bill is only included when its due date is overdue (in the past
      * this cycle) or within the next 14 days — bills due further out are
      * omitted entirely. "Paid" means a transaction with this bill's id
-     * falls within the window from the previous cycle's due date
-     * (inclusive) up to the next cycle's due date (exclusive).
+     * falls within a grace window centered on *this* cycle's due date:
+     * from 5 days before the due date (inclusive) up to 5 days before the
+     * next cycle's due date (exclusive). This keeps the window from
+     * reaching back far enough to pick up a payment that actually paid the
+     * previous cycle, while still tolerating a payment made a few days
+     * early or a few days late.
      *
      * @param today Reference date for "now" (defaults to the current time); only its UTC calendar date is used.
      * @return Upcoming/overdue/paid bills, sorted by due date ascending.
      */
     getUpcomingBills(today: Date = new Date()): UpcomingBill[] {
+        const GRACE_PERIOD_MS = 5 * 24 * 60 * 60 * 1000; // 5 days
         const todayUTC = new Date(Date.UTC(today.getUTCFullYear(), today.getUTCMonth(), today.getUTCDate()));
         const bills = this.getAllBills();
         const result: UpcomingBill[] = [];
 
         for (const bill of bills) {
             const dueDate = dueDateForMonth(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth(), bill.due_day);
-            const prevDueDate = dueDateForMonth(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth() - 1, bill.due_day);
             const nextDueDate = dueDateForMonth(todayUTC.getUTCFullYear(), todayUTC.getUTCMonth() + 1, bill.due_day);
 
             const daysUntilDue = Math.round((dueDate.getTime() - todayUTC.getTime()) / (24 * 60 * 60 * 1000));
@@ -125,9 +129,12 @@ export class BillService {
                 continue;
             }
 
+            const windowStart = new Date(dueDate.getTime() - GRACE_PERIOD_MS);
+            const windowEnd = new Date(nextDueDate.getTime() - GRACE_PERIOD_MS);
+
             const paid = db.prepare(
                 'SELECT 1 FROM transactions WHERE bill_id = ? AND date >= ? AND date < ? LIMIT 1'
-            ).get(bill.id, toISODate(prevDueDate), toISODate(nextDueDate)) !== undefined;
+            ).get(bill.id, toISODate(windowStart), toISODate(windowEnd)) !== undefined;
 
             result.push({
                 bill,

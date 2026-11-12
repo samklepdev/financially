@@ -166,16 +166,34 @@ test('getUpcomingBills marks a bill due today as upcoming (not overdue)', () => 
     assert.equal(entry?.dueDate, '2026-06-15');
 });
 
-test('getUpcomingBills counts a transaction on prevDueDate as paid (window start is inclusive)', async () => {
+test('getUpcomingBills does not count a transaction on the previous cycle due date as paid (two-cycle window bug fix)', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    // today = 2026-06-15, due_day = 1 => dueDate = 2026-06-01, which is already overdue.
+    // A transaction dated 2026-05-01 paid the PREVIOUS cycle's bill, not this one, so it
+    // must not count as paid for the June cycle even though it is within 14 days of due.
+    const today = new Date('2026-06-15T00:00:00Z');
+    const bill = service.createBill({name: 'Two Cycle Window Bug Test', amount_cents: 1000, due_day: 1, match_pattern: ''});
+    transactionService.createTransaction({
+        date: '2026-05-01', description: 'Payment for previous cycle', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.status, 'overdue');
+});
+
+test('getUpcomingBills counts a transaction exactly 5 days before the due date as paid (new window start is inclusive)', async () => {
     const {TransactionService} = await import('./transactions.service.ts');
     const transactionService = new TransactionService();
     // today = 2026-06-15, due_day = 10 => dueDate = 2026-06-10
-    // prevDueDate = 2026-05-10 (previous month)
-    // Transaction on 2026-05-10 should count as paid
+    // new window start = dueDate - 5 days = 2026-06-05
+    // A transaction exactly on the window start should count as paid.
     const today = new Date('2026-06-15T00:00:00Z');
     const bill = service.createBill({name: 'Payment Window Start Test', amount_cents: 1000, due_day: 10, match_pattern: ''});
     transactionService.createTransaction({
-        date: '2026-05-10', description: 'Payment on prev cycle due date', amount_cents: -1000,
+        date: '2026-06-05', description: 'Payment 5 days before due date', amount_cents: -1000,
         category_id: null, bill_id: bill.id,
     });
 
@@ -188,8 +206,9 @@ test('getUpcomingBills does not count a transaction on nextDueDate as paid (wind
     const {TransactionService} = await import('./transactions.service.ts');
     const transactionService = new TransactionService();
     // today = 2026-06-15, due_day = 5 => dueDate = 2026-06-05 (overdue)
-    // nextDueDate = 2026-07-05 (next month)
-    // Transaction on 2026-07-05 should NOT count as paid, so status should be 'overdue'
+    // nextDueDate = 2026-07-05, so the paid-detection window end = nextDueDate - 5 days
+    // = 2026-06-30 (exclusive). Transaction on 2026-07-05 falls well after that window
+    // end and should NOT count as paid, so status should be 'overdue'.
     const today = new Date('2026-06-15T00:00:00Z');
     const bill = service.createBill({name: 'Payment Window End Test', amount_cents: 1000, due_day: 5, match_pattern: ''});
     transactionService.createTransaction({
@@ -212,6 +231,65 @@ test('getUpcomingBills clamps due_day 31 to Feb 29 in a leap year', () => {
     const entry = results.find((r) => r.bill.id === bill.id);
     assert.equal(entry?.dueDate, '2028-02-29');
     assert.equal(entry?.status, 'upcoming');
+});
+
+test('getUpcomingBills handles a due date that wraps into January of the following year', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    // today = 2026-12-20, due_day = 31 => dueDate = 2026-12-31 (11 days out, within the
+    // 14-day window so the bill is included). This exercises nextDueDate wrapping into
+    // January of the following year, which is used to compute the paid-detection window
+    // (windowEnd = nextDueDate - 5 days = 2027-01-26). A transaction dated 2027-01-25
+    // falls inside the window [2026-12-26, 2027-01-26) and should count as paid.
+    const today = new Date('2026-12-20T00:00:00Z');
+    const bill = service.createBill({name: 'Year End Wrap Test', amount_cents: 1000, due_day: 31, match_pattern: ''});
+    transactionService.createTransaction({
+        date: '2027-01-25', description: 'Payment inside the forward-wrapping window end', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.dueDate, '2026-12-31');
+    assert.equal(entry?.status, 'paid');
+});
+
+test('getUpcomingBills correctly computes a due date of the 31st in January (year-boundary sanity check)', () => {
+    // today = 2026-01-20, due_day = 31 => dueDate = 2026-01-31 (11 days out, within the
+    // 14-day window so the bill is included).
+    const today = new Date('2026-01-20T00:00:00Z');
+    const bill = service.createBill({name: 'Year Start Due Day 31 Test', amount_cents: 1000, due_day: 31, match_pattern: ''});
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.dueDate, '2026-01-31');
+    assert.equal(entry?.status, 'upcoming');
+});
+
+test('getUpcomingBills handles a paid-detection grace window that crosses back into the previous year', async () => {
+    const {TransactionService} = await import('./transactions.service.ts');
+    const transactionService = new TransactionService();
+    // today = 2026-01-10, due_day = 3 => dueDate = 2026-01-03 (7 days overdue, within the
+    // 14-day window). The 5-day grace window starts at dueDate - 5 days = 2025-12-29,
+    // i.e. it crosses back into December of the previous year. A transaction dated
+    // 2025-12-30 falls inside that window and should count as paid for the January bill.
+    //
+    // (Note: the old `prevDueDate` variable that used to wrap month - 1 into the
+    // previous year no longer exists after the Finding 1 fix, since the new window is
+    // computed directly from dueDate/nextDueDate via plain date arithmetic. This test
+    // instead exercises the real place a backward year-boundary crossing now happens:
+    // the grace window itself.)
+    const today = new Date('2026-01-10T00:00:00Z');
+    const bill = service.createBill({name: 'Year Start Wrap Test', amount_cents: 1000, due_day: 3, match_pattern: ''});
+    transactionService.createTransaction({
+        date: '2025-12-30', description: 'Payment inside the backward-wrapping grace window', amount_cents: -1000,
+        category_id: null, bill_id: bill.id,
+    });
+
+    const results = service.getUpcomingBills(today);
+    const entry = results.find((r) => r.bill.id === bill.id);
+    assert.equal(entry?.dueDate, '2026-01-03');
+    assert.equal(entry?.status, 'paid');
 });
 
 test('getSuggestedBills suggests a description seen 3+ times about a month apart', async () => {
