@@ -2,6 +2,7 @@ import {useEffect, useState} from "react";
 import {billApiService} from "../services/BillApiService.ts";
 import type {Bill, SuggestedBill} from "../types/bill.ts";
 import {formatMoney} from "../helpers/money.ts";
+import BillRow from "./BillRow.tsx";
 import "../styles/ledger.css"
 import './Bills.css'
 
@@ -139,47 +140,12 @@ function Bills() {
             )}
 
             {!loading && !error && (bills ?? []).map((bill) => (
-                <article className="ledger-row bill-row" key={bill.id}>
-                    <input
-                        type="text"
-                        className="bill-name-input"
-                        value={bill.name}
-                        onChange={(e) => handleUpdate(bill, {name: e.target.value})}
-                    />
-                    <input
-                        type="number"
-                        step="0.01"
-                        min="0.01"
-                        className="bill-amount-input"
-                        value={(bill.amount_cents / 100).toFixed(2)}
-                        onChange={(e) => {
-                            const value = Number(e.target.value);
-                            if (Number.isFinite(value) && value > 0) {
-                                handleUpdate(bill, {amount_cents: Math.round(value * 100)});
-                            }
-                        }}
-                    />
-                    <input
-                        type="number"
-                        min="1"
-                        max="31"
-                        className="bill-due-day-input"
-                        value={bill.due_day}
-                        onChange={(e) => {
-                            const value = Number(e.target.value);
-                            if (Number.isInteger(value) && value >= 1 && value <= 31) {
-                                handleUpdate(bill, {due_day: value});
-                            }
-                        }}
-                    />
-                    <input
-                        type="text"
-                        className="bill-pattern-input"
-                        value={bill.match_pattern}
-                        onChange={(e) => handleUpdate(bill, {match_pattern: e.target.value})}
-                    />
-                    <button type="button" onClick={() => handleDelete(bill.id)}>Delete</button>
-                </article>
+                <BillRow
+                    key={bill.id}
+                    bill={bill}
+                    onUpdate={handleUpdate}
+                    onDelete={handleDelete}
+                />
             ))}
 
             {visibleSuggestions.length > 0 && (
