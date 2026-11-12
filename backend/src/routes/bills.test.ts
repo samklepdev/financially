@@ -147,3 +147,49 @@ test('GET /bills/suggestions returns an array', async () => {
         await close();
     }
 });
+
+test('GET /bills/:id returns a bill by id', async () => {
+    const {url, close} = await listen(app);
+    try {
+        const createRes = await fetch(`${url}/api/v1/bills`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', Cookie: cookie},
+            body: JSON.stringify({name: 'Get By ID Test Bill', amount_cents: 2000, due_day: 15, match_pattern: 'test'}),
+        });
+        const {data: created} = await createRes.json();
+
+        const getRes = await fetch(`${url}/api/v1/bills/${created.id}`, {
+            headers: {Cookie: cookie},
+        });
+        assert.equal(getRes.status, 200);
+        const {data: retrieved} = await getRes.json();
+        assert.equal(retrieved.id, created.id);
+        assert.equal(retrieved.name, 'Get By ID Test Bill');
+    } finally {
+        await close();
+    }
+});
+
+test('GET /bills/:id returns 400 when id is not a number', async () => {
+    const {url, close} = await listen(app);
+    try {
+        const res = await fetch(`${url}/api/v1/bills/not-a-number`, {
+            headers: {Cookie: cookie},
+        });
+        assert.equal(res.status, 400);
+    } finally {
+        await close();
+    }
+});
+
+test('GET /bills/:id returns 404 when bill does not exist', async () => {
+    const {url, close} = await listen(app);
+    try {
+        const res = await fetch(`${url}/api/v1/bills/999999`, {
+            headers: {Cookie: cookie},
+        });
+        assert.equal(res.status, 404);
+    } finally {
+        await close();
+    }
+});
