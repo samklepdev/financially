@@ -4,7 +4,7 @@ A personal finance tracker that runs entirely on your own machine. Track expense
 
 Your data never leaves your computer: no cloud, no accounts, no bank logins. Everything is stored in a local SQLite file.
 
-> **Status:** work in progress. The transactions API is done; the frontend, categories, bills, CSV import and charts are next. See the [roadmap](#roadmap).
+> **Status:** work in progress. Transactions, categories, PDF import with auto-categorization, charts, and an AI chat sidebar are done; bills, budgets, and multi-account support are next. See the [roadmap](#roadmap).
 
 ## Tech stack
 
@@ -128,14 +128,23 @@ Design choices:
 
 - [x] Database schema
 - [x] Transactions API (create, read, update, delete)
-- [ ] React page: add and list transactions
-- [ ] Categories and bills API
-- [ ] CSV import from bank exports, with column mapping and no duplicate rows
-- [ ] Auto-categorise rules (e.g. "HEB" → Groceries)
-- [ ] Spending totals by category and by month
-- [ ] Charts
-- [ ] Upcoming bills (next 14 days)
-- [ ] Tests with `node:test`
+- [x] React page: add and list transactions
+- [x] Categories API
+- [x] PDF import (Cash App statements), with auto-categorization
+- [x] Auto-categorise rules (e.g. "HEB" → Groceries)
+- [x] Spending totals by category and by month
+- [x] Charts
+- [x] Tests with `node:test`
+- [ ] Bills API (schema exists, no service/controller/routes/UI yet)
+- [ ] Recurring bills/subscriptions tracking (detect + manage recurring transactions, upcoming bills widget)
+- [ ] Budgets per category (monthly caps, progress/alerts)
+- [ ] Multi-account support (tag transactions by source account)
+- [ ] Search/filter on the transactions page (date range, category, amount, text)
+- [ ] CSV export of transactions/categories
+- [ ] Recurring/scheduled manual transactions (projected future balance)
+- [ ] More import sources beyond Cash App PDF (bank CSV, other PDF formats)
+- [ ] Rule management UX polish (bulk edit/merge, preview impact before saving)
+- [ ] Extend AI chat (spending pattern Q&A over a date range)
 
 ## Privacy
 
