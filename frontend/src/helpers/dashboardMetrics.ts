@@ -1,5 +1,6 @@
 import type {Transaction} from "../types/transaction.ts";
 import type {Category} from "../types/category.ts";
+import {monthKey} from "./ledger.ts";
 
 export type DashboardRange = '30d' | '90d' | '1y' | 'all';
 
@@ -62,6 +63,40 @@ export function spendingTrendSeries(transactions: Transaction[], range: Dashboar
     return [...byDate.entries()]
         .map(([date, spendCents]) => ({date, spendCents}))
         .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+export type IncomePoint = {date: string; incomeCents: number};
+
+/** Sum of credits grouped by day within the range. */
+export function incomeTrendSeries(transactions: Transaction[], range: DashboardRange, now: Date = new Date()): IncomePoint[] {
+    const byDate = new Map<string, number>();
+    for (const t of inRange(transactions, range, now)) {
+        if (t.amount_cents > 0) {
+            byDate.set(t.date, (byDate.get(t.date) ?? 0) + t.amount_cents);
+        }
+    }
+    return [...byDate.entries()]
+        .map(([date, incomeCents]) => ({date, incomeCents}))
+        .sort((a, b) => a.date.localeCompare(b.date));
+}
+
+const SHORT_MONTHS = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+
+export type NetCashFlowPoint = {month: string; label: string; netCents: number};
+
+/** Net of all transactions (credits + debits), grouped by calendar month within the range. */
+export function netCashFlowByMonth(transactions: Transaction[], range: DashboardRange, now: Date = new Date()): NetCashFlowPoint[] {
+    const byMonth = new Map<string, number>();
+    for (const t of inRange(transactions, range, now)) {
+        const month = monthKey(t.date);
+        byMonth.set(month, (byMonth.get(month) ?? 0) + t.amount_cents);
+    }
+    return [...byMonth.entries()]
+        .map(([month, netCents]) => {
+            const [year, m] = month.split('-').map(Number);
+            return {month, label: `${SHORT_MONTHS[m - 1]} ${String(year).slice(-2)}`, netCents};
+        })
+        .sort((a, b) => a.month.localeCompare(b.month));
 }
 
 export type CategoryOutflow = {categoryId: number | null; name: string; color: string; totalCents: number; weight: number};

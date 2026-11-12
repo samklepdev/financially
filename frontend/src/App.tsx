@@ -8,9 +8,18 @@ import {categoryName, monthKey, monthLabel, shiftMonth} from "./helpers/ledger.t
 import RangeSelect from "./dashboard/RangeSelect.tsx";
 import RunningBalanceChart from "./dashboard/charts/RunningBalanceChart.tsx";
 import SpendingTrendChart from "./dashboard/charts/SpendingTrendChart.tsx";
+import IncomeTrendChart from "./dashboard/charts/IncomeTrendChart.tsx";
+import NetCashFlowChart from "./dashboard/charts/NetCashFlowChart.tsx";
 import OutflowsDonut from "./dashboard/charts/OutflowsDonut.tsx";
 import DashboardChat from "./dashboard/DashboardChat.tsx";
-import {runningBalanceSeries, spendingTrendSeries, outflowsByCategory, type DashboardRange} from "./helpers/dashboardMetrics.ts";
+import {
+    runningBalanceSeries,
+    spendingTrendSeries,
+    incomeTrendSeries,
+    netCashFlowByMonth,
+    outflowsByCategory,
+    type DashboardRange,
+} from "./helpers/dashboardMetrics.ts";
 import "./styles/ledger.css"
 import './App.css'
 
@@ -61,6 +70,14 @@ function App() {
         () => spendingTrendSeries(transactions ?? [], range),
         [transactions, range]
     );
+    const incomeSeries = useMemo(
+        () => incomeTrendSeries(transactions ?? [], range),
+        [transactions, range]
+    );
+    const netCashFlow = useMemo(
+        () => netCashFlowByMonth(transactions ?? [], range),
+        [transactions, range]
+    );
     const outflows = useMemo(
         () => outflowsByCategory(transactions ?? [], categories, range),
         [transactions, categories, range]
@@ -73,6 +90,8 @@ function App() {
                 <section className="chart-grid" aria-label="Financial charts">
                     <RunningBalanceChart data={balanceSeries}/>
                     <SpendingTrendChart data={spendSeries}/>
+                    <IncomeTrendChart data={incomeSeries}/>
+                    <NetCashFlowChart data={netCashFlow}/>
                     <OutflowsDonut data={outflows}/>
                 </section>
 

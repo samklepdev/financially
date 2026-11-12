@@ -1,0 +1,33 @@
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node-terminal",
+      "name": "Run backend (dev)",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/backend"
+    },
+    {
+      "type": "node-terminal",
+      "name": "Run frontend (dev)",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}/frontend"
+    },
+    {
+      "type": "node-terminal",
+      "name": "Run all (dev)",
+      "request": "launch",
+      "command": "npm run dev",
+      "cwd": "${workspaceFolder}"
+    }
+  ],
+  "compounds": [
+    {
+      "name": "Run backend + frontend",
+      "configurations": ["Run backend (dev)", "Run frontend (dev)"],
+      "stopAll": true
+    }
+  ]
+}
