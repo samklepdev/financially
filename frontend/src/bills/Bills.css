@@ -1,0 +1,192 @@
+.bill-add {
+  align-items: flex-end;
+  gap: 0.6rem;
+  margin-bottom: 1.5rem;
+  flex-wrap: wrap;
+}
+
+.bill-field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+}
+
+.bill-field--grow {
+  flex: 1;
+  min-width: 8rem;
+}
+
+.bill-field--grow input {
+  width: 100%;
+}
+
+.bill-field__label {
+  font-family: var(--mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--text-on-paper-dim);
+}
+
+.bill-add input,
+.bill-add select,
+.bill-row input,
+.bill-row select {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-paper);
+  background: var(--paper-dim);
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.4rem 0.6rem;
+}
+
+.bill-add .ledger-category-select,
+.bill-row .ledger-category-select {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  letter-spacing: normal;
+  border-radius: 4px;
+  width: 9rem;
+}
+
+.bill-add-submit {
+  font-family: var(--sans);
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: var(--text-on-ink-strong);
+  background: var(--credit-dim);
+  border: none;
+  border-radius: 4px;
+  padding: 0.5rem 0.9rem;
+  cursor: pointer;
+}
+
+.bill-add-submit:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
+.bill-suggestion-hint {
+  font-size: 0.82rem;
+  font-style: italic;
+  padding: 0 0.25rem 1rem;
+  margin-top: -0.75rem;
+}
+
+.bill-row {
+  align-items: flex-end;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+}
+
+.bill-amount-input {
+  width: 6rem;
+}
+
+.bill-due-day-input {
+  width: 4.5rem;
+}
+
+.ledger-category-select:focus-visible {
+  outline: 2px solid var(--due);
+  outline-offset: 2px;
+}
+
+.bill-defer {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bill-defer__label {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--text-on-paper);
+  white-space: nowrap;
+}
+
+.bill-paid {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.bill-paid--auto {
+  font-family: var(--mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.03em;
+  color: var(--credit-dim);
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 999px;
+  padding: 0.15rem 0.55rem;
+  white-space: nowrap;
+}
+
+.bill-paid__label {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  color: var(--debit-dim);
+  white-space: nowrap;
+}
+
+.bill-paid__label--marked {
+  color: var(--credit-dim);
+}
+
+.bill-row button {
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-paper);
+  background: none;
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.45rem 0.8rem;
+  cursor: pointer;
+}
+
+.bill-suggestions {
+  margin-top: 2rem;
+}
+
+.bill-suggestions__title {
+  font-family: var(--mono);
+  font-size: 0.7rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--text-on-paper);
+  margin-bottom: 0.75rem;
+}
+
+.bill-suggestion-row {
+  gap: 0.75rem;
+}
+
+.bill-suggestion-description {
+  flex: 1;
+}
+
+.bill-suggestion-row button {
+  font-family: var(--sans);
+  font-size: 0.8rem;
+  background: none;
+  border: 1px solid var(--rule-on-paper);
+  border-radius: 4px;
+  padding: 0.4rem 0.7rem;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .bill-add {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .bill-field--grow {
+    min-width: 0;
+  }
+
+  .bill-add-submit {
+    margin-top: 0.3rem;
+  }
+}

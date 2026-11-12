@@ -52,3 +52,17 @@ if (!categoryColumns.some((c) => c.name === 'color')) {
     db.exec(`ALTER TABLE categories ADD COLUMN color TEXT NOT NULL DEFAULT '#6b9478'`);
 }
 
+const billColumns = db.prepare("SELECT name FROM pragma_table_info('bills')").all() as {name: string}[];
+if (!billColumns.some((c) => c.name === 'match_pattern')) {
+    db.exec(`ALTER TABLE bills ADD COLUMN match_pattern TEXT NOT NULL DEFAULT ''`);
+}
+if (!billColumns.some((c) => c.name === 'deferred_until')) {
+    db.exec(`ALTER TABLE bills ADD COLUMN deferred_until TEXT`);
+}
+if (!billColumns.some((c) => c.name === 'category_id')) {
+    db.exec(`ALTER TABLE bills ADD COLUMN category_id INTEGER REFERENCES categories(id) ON DELETE SET NULL`);
+}
+if (!billColumns.some((c) => c.name === 'marked_paid_for')) {
+    db.exec(`ALTER TABLE bills ADD COLUMN marked_paid_for TEXT`);
+}
+

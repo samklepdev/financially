@@ -67,6 +67,16 @@
   gap: 1rem;
 }
 
+.chart-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  height: 220px;
+  font-family: var(--sans);
+  font-size: 0.85rem;
+  color: var(--text-on-ink);
+}
+
 .outflows-donut {
   position: relative;
   display: flex;

@@ -19,6 +19,7 @@ export type ImportConfirmItem = NewTransaction & {newCategoryName?: string};
 
 export type CategorySuggestion = {
     category_id: number | null;
+    bill_id: number | null;
     aiSuggested: boolean;
     proposedCategoryName: string | null;
 };

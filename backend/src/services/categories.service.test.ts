@@ -57,3 +57,18 @@ test('deleting a category sets category_id to null on referencing transactions',
     const reloaded = transactionService.getTransactionById(transaction.id);
     assert.equal(reloaded?.category_id, null);
 });
+
+test('deleting a category sets category_id to null on referencing bills', async () => {
+    const {BillService} = await import('./bill.service.ts');
+    const billService = new BillService();
+
+    const category = service.createCategory({name: 'Will Be Deleted From Bill', color: '#000000'});
+    const bill = billService.createBill({
+        name: 'Categorized Bill', amount_cents: 500, due_day: 1, match_pattern: '', deferred_until: null, category_id: category.id, marked_paid_for: null,
+    });
+
+    service.deleteCategory(category.id);
+
+    const reloaded = billService.getBillById(bill.id);
+    assert.equal(reloaded?.category_id, null);
+});

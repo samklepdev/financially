@@ -1,5 +1,6 @@
 import {useState, type FormEvent} from "react";
 import type {Category} from "../types/category.ts";
+import type {Bill} from "../types/bill.ts";
 import type {NewTransaction, Transaction} from "../types/transaction.ts";
 import {transactionApiService} from "../services/TransactionApiService.ts";
 import {categoryApiService} from "../services/CategoryApiService.ts";
@@ -17,17 +18,19 @@ function todayDate(): string {
 
 type Props = {
     categories: Category[];
+    bills: Bill[];
     onCreated: (t: Transaction) => void;
     onCategoryCreated: (c: Category) => void;
     onCancel: () => void;
 };
 
-function AddTransactionForm({categories, onCreated, onCategoryCreated, onCancel}: Props) {
+function AddTransactionForm({categories, bills, onCreated, onCategoryCreated, onCancel}: Props) {
     const [date, setDate] = useState(todayDate());
     const [description, setDescription] = useState('');
     const [amount, setAmount] = useState('');
     const [amountType, setAmountType] = useState<typeof EXPENSE | typeof INCOME>(EXPENSE);
     const [categoryId, setCategoryId] = useState<number | null>(null);
+    const [billId, setBillId] = useState<number | null>(null);
     const [proposedCategoryName, setProposedCategoryName] = useState<string | null>(null);
     const [aiSuggested, setAiSuggested] = useState(false);
     const [manuallySet, setManuallySet] = useState(false);
@@ -43,10 +46,12 @@ function AddTransactionForm({categories, onCreated, onCategoryCreated, onCancel}
         try {
             const suggestion = await transactionApiService.suggestCategory(description.trim());
             setCategoryId(suggestion.category_id);
+            setBillId(suggestion.bill_id);
             setAiSuggested(suggestion.aiSuggested);
             setProposedCategoryName(suggestion.proposedCategoryName);
         } catch {
             setCategoryId(null);
+            setBillId(null);
             setAiSuggested(false);
             setProposedCategoryName(null);
         } finally {
@@ -90,7 +95,7 @@ function AddTransactionForm({categories, onCreated, onCategoryCreated, onCancel}
 
             const amount_cents = Math.round(amountValue * 100) * (amountType === EXPENSE ? -1 : 1);
             const newTransaction: NewTransaction = {
-                date, description: description.trim(), amount_cents, category_id: finalCategoryId, bill_id: null,
+                date, description: description.trim(), amount_cents, category_id: finalCategoryId, bill_id: billId,
             };
             const created = await transactionApiService.createTransaction(newTransaction);
             onCreated(created);
@@ -140,6 +145,16 @@ function AddTransactionForm({categories, onCreated, onCategoryCreated, onCancel}
                     </select>
                 )}
                 {aiSuggested && !proposedCategoryName && <span className="import-ai-badge">AI guess</span>}
+                <select
+                    className="ledger-category-select"
+                    value={billId ?? ''}
+                    onChange={(e) => setBillId(e.target.value === '' ? null : Number(e.target.value))}
+                >
+                    <option value="">No bill</option>
+                    {bills.map((b) => (
+                        <option key={b.id} value={b.id}>{b.name}</option>
+                    ))}
+                </select>
             </div>
             <div className="add-transaction-amount">
                 <select

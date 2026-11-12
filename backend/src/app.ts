@@ -5,6 +5,7 @@ import {categoriesRouter} from './routes/categories.router.ts'
 import {categoryRulesRouter} from './routes/categoryRules.router.ts'
 import {dashboardChatRouter} from './routes/dashboardChat.router.ts'
 import {authRouter} from './routes/auth.router.ts'
+import {billsRouter} from './routes/bill.router.ts'
 import {requireAuth} from './middleware/requireAuth.ts'
 
 const app = express();
@@ -18,6 +19,7 @@ app.use('/api/v1/transactions', requireAuth, transactionsRouter)
 app.use('/api/v1/categories', requireAuth, categoriesRouter)
 app.use('/api/v1/category-rules', requireAuth, categoryRulesRouter)
 app.use('/api/v1/dashboard', requireAuth, dashboardChatRouter)
+app.use('/api/v1/bills', requireAuth, billsRouter)
 
 app.get('/', (req: Request, res: Response) => {
   res.send('Hello, World!');

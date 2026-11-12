@@ -74,7 +74,7 @@ test('resolves from exact-description history before anything else', async () =>
         });
         assert.equal(res.status, 200);
         const body = await res.json();
-        assert.deepEqual(body.data, {category_id: category.id, aiSuggested: false, proposedCategoryName: null});
+        assert.deepEqual(body.data, {category_id: category.id, bill_id: null, aiSuggested: false, proposedCategoryName: null});
     } finally {
         await close();
     }
@@ -105,7 +105,34 @@ test('falls back to a keyword rule when there is no history match', async () => 
         });
         assert.equal(res.status, 200);
         const body = await res.json();
-        assert.deepEqual(body.data, {category_id: category.id, aiSuggested: false, proposedCategoryName: null});
+        assert.deepEqual(body.data, {category_id: category.id, bill_id: null, aiSuggested: false, proposedCategoryName: null});
+    } finally {
+        await close();
+    }
+});
+
+test('auto-links to a bill by match_pattern when one matches', async () => {
+    const {url, close} = await listen(app);
+    try {
+        const cookie = await loginCookie(url);
+
+        await fetch(`${url}/api/v1/bills`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', Cookie: cookie},
+            body: JSON.stringify({
+                name: 'Netflix Suggest Test', amount_cents: 1599, due_day: 5, match_pattern: 'Netflix Suggest Test',
+                deferred_until: null,
+            }),
+        });
+
+        const res = await fetch(`${url}/api/v1/transactions/suggest-category`, {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json', Cookie: cookie},
+            body: JSON.stringify({description: 'Netflix Suggest Test Monthly'}),
+        });
+        assert.equal(res.status, 200);
+        const body = await res.json();
+        assert.notEqual(body.data.bill_id, null);
     } finally {
         await close();
     }
